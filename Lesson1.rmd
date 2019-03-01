@@ -1,0 +1,269 @@
+---
+title: "Aplicación del paquete estadístico R para la visualización y el análisis de datos              pesqueros y ecológicos"
+subtitle: "Unidad Académica Mazatlán"
+author: " <br> Matias Braccini <br> Department of Primary Industries and Regional Development  <br> Western Australia"
+date: "7-11 October 2019"
+output: 
+  html_document:
+    code_folding: show
+    highlight: haddock
+    keep_md: yes
+    theme: united
+---
+
+<style type="text/css">
+h1.title {
+  font-size: 30px;
+    color: Maroon;
+  text-align: center;
+          }
+h3.subtitle {
+  font-size: 22px;
+    color: Maroon;
+  text-align: center;
+            }
+h4.author { 
+    font-size: 24px;
+      color: FireBrick;
+  text-align: center;
+          }
+h4.date { 
+  font-size: 18px;
+  text-align: center;
+        }
+h1{
+  font-size: 22px;
+  color: DarkBlue;
+  }
+h2{
+  font-size: 20px;
+  color: Blue;
+  }
+h3{
+  font-size: 18px;
+  color: SteelBlue;
+  }
+body{
+    font-family: Helvetica;
+    font-size: 14pt;
+    }
+code.r{
+  font-size: 16pt;
+      }
+pre {
+  font-size: 16pt;
+}
+</style>
+
+
+```{r globaloptions, include=FALSE}
+knitr::opts_chunk$set(fig.width = 12,fig.height = 8,
+                        echo = TRUE, warning=FALSE,message=FALSE)
+```
+<br>
+GitHub repository: https://github.com/JuanMatiasBraccini/Git_R_course <br>
+Dropbox repository: https://www.dropbox.com/home/R_course_Mazatlan_2019
+
+#Acknowledgements
+Big thanks to Simon De Lestang, Ainslie Denham and Alex Hesp for providing with reference code and material 
+
+# Introduction to R and Rstudio
+1.  A script is a combination of **comments** and **words** which is R syntax (code)
+```{r }
+#calculate mean
+mean(1:10)
+```
+2.  "R studio" provides an interface for using the program R and it has 4 main panes:
++ top left is where you write code (this is where you save your script)
++ below is the console where you see outputs and code that you have run
++ top right window shows info on objects 
++ bottom right window shows plot, help, etc.
+
+##Using R like a calculator
+```{r }
+# what is 4 + 5?
+#type 4+5 and press 'Run' or 'ctrl+Enter' (this is how we run code)
+4 + 5
+
+# Multiplication, let's try 21 * 6
+21 * 6
+
+# Subtraction
+63 - 2
+
+# Division
+10 / 5
+
+# A mixture of basic operations
+2 * (10 + 6)
+```
+## Various ways to run code
++ To run a single line of code, position the cursor and press 'Run' or 'Ctrl + Enter'
++ To run several lines of code at once, highlight them all and press 'Run' or 'Ctrl + Enter'
++ To run whole code at once, 'Ctrl + a' and 'Run'
+
+
+## Storing values as "variables"
+```{r}
+
+ # Store information in computer memory, so that we can use it later
+FirstNumber <- 4    
+SecondNumber <- 5
+#note: when naming variables use names that describe what information is being stored, so that the name means something to you
+Result=FirstNumber+SecondNumber #can use '<-' or '='
+Result   #the new variable (where the outcome is stored)
+# In the top right window (environment window), you should see under 'Values' our variable names
+# So the computer now knows that our first variable, FirstNumber, is equal to 4, and our second variable, SecondNumber, is equal to 5
+
+#note that R is case-sensitive, type 'firstnumber'
+
+#if not interested in keeping a variable in the memory
+rm(FirstNumber)
+# so it's now gone from the environment window.
+
+#if we need to clear the entire memory
+rm(list=ls()) #if we put this at the beginning of a script, we start with no info being stored in memory
+
+# Text variables (called 'strings')
+CalendarMonth <- "Jan"   #note how we need to add " " around the text
+CalendarMonth
+```
+
+## Storing several values as a vector
+```{r}
+# Often we want to store, manipulate, etc., multiple numbers at once
+# For example, we can store several numbers in a "vector".
+NumberVector1 <- c(1,2,3,4,5)
+NumberVector1    #look at the top right pane...
+
+#vector calculations
+NumberVector2 <- c(6,7,8,9,10)
+NumberVector1 + NumberVector2  #(element wise)
+NumberVector1 * NumberVector2
+
+#joining vectors
+NumberVector3 <- c(NumberVector1,NumberVector2)
+
+# what about text
+TextVector1 <- c("Jan","Feb","Mar")
+TextVector2 <- c("Apr","May","Jun")
+TextVector3=c(TextVector1,TextVector2)  #type TextVector1+TextVector2
+```
+
+## Specifying number sequences
+```{r}
+# how can we create the numbers 1,2,.., 10, without writing all these numbers?
+seq(from=1,to=10,by=1)
+# this is the same as
+seq(1,10,1)  # seq is an inbuilt function (it has arguments); If you don't know the function/arguments: ask Google, or type ?seq
+
+#Let's store these numbers
+NumberVector4 <- seq(1,10,1)
+NumberVector4
+
+#Exercise: create a sequence of numbers starting at 0, finishing            at 100, and incrementing by 2
+
+#Let's reverse the sequence
+seq(10,1,-1)
+rev(seq(1,10,1)) #note: there are multiple ways of getting to the          same solution....
+
+#Exercise: create a sequence of numbers increasing from 0 to 20 by 2            and then decreasing back to 0 by 2 without repeating 20 
+
+```
+
+## Basic summary statistics
+```{r}
+NumberSequence <- c(seq(0,20,2),seq(18,0,-2))
+length(NumberSequence)        #how namy numbers in our sequence?
+max(NumberSequence)           #what is the maximum value?
+min(NumberSequence)           #what is the minimun value?
+range(NumberSequence)         #what is the range?
+sum(NumberSequence)           #what do all the numbers add up to?
+mean(NumberSequence)          #what is the mean?
+sd(NumberSequence)            #what is the standard deviation?
+median(NumberSequence)        #what is the 50th percentile (median) 
+#...type percentile(NumberSequence)
+quantile(NumberSequence,0.75) #what is the 75th percentile
+summary(NumberSequence)       #summary
+
+```
+## Basic functions cheat sheet
+https://www.rstudio.com/wp-content/uploads/2016/10/r-cheat-sheet-3.pdf
+>br>
+
+## Accessing elements within a vector (subsetting)
+```{r}
+NumberSequence[1] # the first number of that sequence
+NumberSequence[5] # the fifth number of that sequence
+NumberSequence[1:5] # the first five numbers of that sequence
+NumberSequence[c(1,5)] # the first and fifth numbers of that sequence
+
+#what if we want to find a particular number in the vector?
+id=which(NumberSequence==4) #the == indicates a logical operation
+id
+NumberSequence[id]
+
+#find the values NOT EQUAL to 4
+id=which(!NumberSequence==4) 
+NumberSequence[id]
+
+#which ones had a value less than or equal to 10?
+id=which(NumberSequence<=10)
+NumberSequence[id]
+
+#which ones had a value more than 10?
+id=which(NumberSequence>10)
+NumberSequence[id]
+
+# which ones are less/equal to 4 OR  greater/equal to 18?
+id=which(NumberSequence<=4 | NumberSequence>=18)
+NumberSequence[id]
+
+#which ones are less/equal to 10 AND greater/equal to 4?
+id=which(NumberSequence<=10 & NumberSequence>=4)
+NumberSequence[id]
+
+#logical operations for character vectors
+which(TextVector1=="Feb")
+which(TextVector1%in%c("Feb","Mar"))
+id=which(TextVector1%in%c("Feb","Mar"))
+TextVector1[id]
+TextVector1[which(TextVector1%in%c("Feb","Mar"))]
+which(month.abb=="Jun")     # vector already defined in R
+which(month.name=="April")  # vector already defined in R
+
+```
+
+## vectors of repeated numbers
+```{r}
+rep(1,5)
+rep(2,3)
+c(rep(1,5),rep(2,3))  #combined results
+rep(1:2, each=2)     #repeat each times
+
+```
+
+## Wrap up exercise
+1. Create a vector containing the numbers 1 to 10 
+2. Create a second vector containing the numbers 1 to 5
+3. Join them together
+4. Add 5 to each number, then multply the resultant numbers by 6
+5. Calculate the minimum, maximum and mean of the resultant set of numbers
+6. Work out which of the numbers are greater then 60 
+7. Subtract 10 from only those numbers that are greater than 60, and add them all up!
+
+```{r}
+NumberVector1 <- 1:10
+NumberVector1
+NumberVector2 <- 1:5
+NumberVector2
+NumberVector3 <- c(NumberVector1,NumberVector2)
+NumberVector3
+(NumberVector3+5)*6 -> NumberVector4  #either way works...
+NumberVector4
+summary(NumberVector4)
+id=which(NumberVector4>60)
+id
+NumberVector4[id]
+sum(NumberVector4[id]-10)
+```
