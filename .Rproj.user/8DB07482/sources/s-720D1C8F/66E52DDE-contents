@@ -1,0 +1,90 @@
+# MS698 - Statistical and Graphical Analysis in R                     Fall, 2010 
+
+# Instructor:	Janos (John) M. Hoenig 
+# Contact:	hoenig@vims.edu  
+#           office: x7125; home: 757 564 9766; cell: 804 815 2912
+
+# some statistical tests on the lemon shark data. Juvenile lemon sharks were
+# tagged in the Turks and Caicos Islands and the sex was noted at the time of
+# tagging.  
+# Colasso, Claydon and Hoenig      16April09
+
+# First, let's look at the sex ratio of tagged and of recaptured lemons. We can
+# use Fisher's exact test for the equality of two proportions
+
+?fisher.test
+  
+# the following is an example from the help page
+TeaTasting <- matrix(c(3, 1, 1, 3),nrow = 2,
+       dimnames = list(Guess = c("Milk", "Tea"),
+                       Truth = c("Milk", "Tea")))
+TeaTasting  # This is a famous case study where a woman insisted she could tell
+            # whether the milk was added to the cup first or the tea was added
+            # first. Sir Ronald Fisher devised a statistical test of the 
+            # hypothesis that the woman had ability to determine which was 
+            # poured first.
+fisher.test(TeaTasting, alternative = "greater")  # although the odds ratio
+     # is greater than 1 (as would be expected if she could discern the order)
+     # the result is not statistically significant.
+
+
+# now construct the 2x2 table with the first row being the number of male sharks
+# tagged and recaptured and the second row being the number of females tagged
+# and recaptured
+
+sex.ratio <- matrix(c(59,4,52,17),nrow=2,byrow=T,
+  dimnames=list(sex=c("male","female"),capture=c("tag","recap")))
+sex.ratio
+fisher.test(sex.ratio)    # NOTE: the small p-value indicates that the sex ratio
+                          # of tagged sharks is statistically significantly 
+                          # different from that of recaptured sharks. 
+                          # (Don't know what importance that might have.)
+
+# now let's look at the lack of independence graphically using a mosaic plot.
+
+mosaicplot(sex.ratio)
+
+# If recapture probability is independent of sex then we should expect to see
+# the two horizontal line segments be a single horizontal line. Instead we see
+# the two line segments are at different heights indicating lack of 
+# independence. Alternatively and equivalently, we could ask if the sex ratio
+# is the same for tagged and recaptured animals. We'd show this graphically by
+# making the mosaic plot for the transpose of the data.
+
+par(mfrow=c(1,2))
+mosaicplot(sex.ratio)     # compare recapture probability between the sexes
+mosaicplot(t(sex.ratio))  # compare sex ratios between the tagged and 
+                          # recaptured groups
+
+# You can also do an association plot which describes the statistical 
+# signficance of the residual for each cell (instead of showing an estimate of
+# the degree of dependence. Do this using the function strucplot() in the vcd
+# package.)
+
+# We note, also, that an alternative to the Fisher exact test is the regular
+# chi-square test which can be done using
+
+chisq.test(sex.ratio,simulate.p.value=T)
+fisher.test(sex.ratio)   # Note that the two tests give very similar p-values
+                         # (and note also that I specified the p-value should be
+                         # determined by a simulation procedure rather than 
+                         # relying on the tabled value of the chi-square 
+                         # distribution. This is a modern, computer-intensive
+                         # approach to determining the p-value and it works
+                         # better than reliance on the chi-square distribution.
+                          
+# Now suppose we want to test whether the average movement of males is 
+# significantly different from that of females. We can use a t-test.
+
+male.move = c(1,2,3,4,5)        # fake data to demonstrate use of t.test
+female.move = c(3,4,5,6)        # fake data
+
+t.test(male.move,female.move)   # Note the degrees of freedom is 6.981, which is
+                                # close to but not exactly 7.
+
+# In t.test, the default is to assume the variances may not be equal and to 
+# make an adjustment to allow for that. The way the test is "patched up" so as
+# to be approximately right even though the assumption of equal variances is not
+# met is to adjust the effective degrees of freedom.
+
+?t.test

@@ -1,0 +1,68 @@
+# MS698 - Statistical and Graphical Analysis in R                     Fall, 2010 
+
+# Instructor:	Janos (John) M. Hoenig 
+# Contact:	hoenig@vims.edu  
+#           office: x7125; home: 757 564 9766; cell: 804 815 2912
+
+# Length-converted catch curves are described in Pauly (1984). The idea is that
+# if you plot the log of the number in each size category versus the
+# corresponding relative age, the slope of the descending right limb of the
+# curve can be used to get an estimate of the total instantaneous mortality rate
+
+# These data are for banded grouper (Epinephelus sexfasciatus) from the
+# Philippines. A number of samples from throughout the year were pooled to
+# get a representative picture of the size structure of the population.
+
+leng.classes = seq(5,27,2)  # midpoints of length classes (in cm)
+leng.classes
+numbers = c(5,29,114,162,143,118,61,50,32,17,4,4) # number caught in each length
+numbers                                           # category
+length(leng.classes) #check whether the number of size observations equals the
+length(numbers)     #number of size classes   (Yes, each vector is of length 12)
+
+# do a preliminary plot
+plot(leng.classes,log(numbers))  #nothing looks suspicious
+
+# We need the following information:
+# Linf = Linfinity (asymptotic length) = 30.9
+# K = von Bertalanffy growth coefficient = .51
+
+ # Now we can convert length to relative age. (Relative age differs from true
+ # age by a constant. That is, true age = relative age + To where To is a
+ # parameter of the von Bertalanffy growth equation. We don't need To in order
+ # to estimate Z.)
+ 
+ Linf = 30.9
+ K = .51
+ relage = -log(1 - leng.classes/Linf)/K  # relative age at the center of each
+                                         # length class
+ relage
+ 
+ plot(relage,log(numbers),typ="b",xlab="relative age, yrs",ylab="log(number)")
+ 
+ # regress log(numbers) on relative age
+ catch.curve = lm(log(numbers[5:12])~relage[5:12]) #Note: we exclude vales on 
+                                                   # the ascending (left) limb
+ abline(catch.curve)   # add a regression line to the existing plot
+
+ catch.curve           # look at the regression output.
+ 
+ # Note the slope is -1.322. We obtain an estimate of Z from the slope by adding
+ # K to the absolute value of the slope
+ 
+ Z = K + abs(-1.322)
+ Z
+
+# Now suppose we wonder if the last datapoint on the right is very influential.
+# We can refit everything after omitting the 12th (last) datapoint.
+ 
+catch.curvenew = lm(log(numbers[5:11])~relage[5:11])
+catch.curvenew
+Z = K + abs(catch.curvenew$coefficients[2])
+Z
+# yes, that last datapoint is somewhat influential - deleting it causes the
+# estimate of Z to go up from 1.83 to 2.07
+100*(2.07-1.83)/1.83
+# Deleting the last datapoint increased the estimate of Z by 13%, not such a big
+# deal. 
+ 

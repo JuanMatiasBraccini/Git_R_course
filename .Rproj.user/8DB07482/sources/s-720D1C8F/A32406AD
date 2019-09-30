@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1569817450288.000,
+    "dirty" : true,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "A32406AD",
+    "lastKnownWriteTime" : 1569828850,
+    "last_content_update" : 1569828946910,
+    "path" : "C:/Matias/Cursos/2019_Mexico/Git_R_course/Lesson3.rmd",
+    "project_path" : "Lesson3.rmd",
+    "properties" : {
+        "cursorPosition" : "4,0",
+        "scrollLine" : "0"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

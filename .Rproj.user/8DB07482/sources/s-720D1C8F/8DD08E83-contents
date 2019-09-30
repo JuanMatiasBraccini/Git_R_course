@@ -1,0 +1,16 @@
+set.seed(666)
+library(tidyverse)
+#
+# This sets the starting point for the random number generators.
+N=200
+b0 = 5                  
+b1 = 3                 # true coeff. (slope) for x1
+b2 = -.5                 # true coeff. for x2
+thedata=data.frame(Pred1 = rnorm(N,20,4))%>%
+          mutate(Pred2 = Pred1 + rnorm(N,5,2),
+                 Pred3 = rnorm(N,0,10),
+                 Factor1 = as.factor(rep(c("A","B"),c(N/2,N/2))),
+                 Response= b0 + b1*Pred1 + b2*Pred2 + rnorm(N,0,2))
+write.csv(thedata,"Lesson3_linear.model.exercise.csv",row.names = F)
+
+

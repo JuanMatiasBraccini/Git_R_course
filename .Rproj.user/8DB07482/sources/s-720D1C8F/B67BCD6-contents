@@ -1,0 +1,468 @@
+# WADF - Statistical and Graphical Analysis in R                     March, 2011 
+
+# Instructor:	Janos (John) M. Hoenig 
+# Contact:	hoenig@vims.edu  
+
+
+# anything on a line to the right of # is a comment (not executed)
+
+#  color scheme in this window:
+#
+#   green   comments
+#   red     logicals (TRUE and FALSE, T and F), numbers that aren't available
+#              (NA, NaN, inf), start and end of a function
+#   blue    a function
+#   brown   character strings
+
+# when printing this file, anything to the right of the vertical line - here -->
+# will wrap around to the next line
+
+2+3*4         # using R as a fancy calculator
+2 + 3*    4   # spacing doesn't matter
+# assignment and listing
+x <- 2+3*4    # the two symbols < and - together mean assign what's on the right
+              # to the name on the left.  You can read this as x gets 2 + 3*4 .
+              # Here, spacing does matter: < - is different from <- 
+                 
+x             # typing the name of an object means list the object
+
+y = 2+3*4    # these days, people use = for assignment. But, in S people used <- 
+             # and it is good to remember this in case you try to read someone's 
+             # S code and convert it to R
+y
+
+Y              # note that R is case-sensitive so y is not the same as Y. We 
+               # created y but not Y. Hence the error 
+               # message Error: object "Y" not found 
+
+#######################
+# HANDY DANDY RULE # 1:  When R cannot find an object, check for typos and 
+# capitalization errors
+#######################
+
+(z <- 2 + 2)  # handy trick: if you enclose the statement in parentheses, R will
+              # do the assignment AND print the results in the console. That is,
+              # the above is equivalent to:
+z <- 2 + 2
+z
+
+# CREATING DATA STRUCTURES
+
+# create a vector of the integers from 237 to 413
+junk <- 237:413
+# list the vector. Typing and executing the name of an object causes the object
+# to be printed on the screen
+junk           # the numbers in the square brackets at the left are just to help 
+               # you keep track of the index of a number, i.e., so you can 
+               # identify the ith number in a vector
+
+junk <- 0:5
+junk
+
+junk <- -2:5
+junk
+
+junk <- 5:-2
+junk
+
+# create a vector with numbers starting at 1.3, increasing by 1, up to but 
+# not exceeding 50
+junk2 <- 1.3:50
+junk2
+
+# the concatenate function c( )
+
+c(3,4,5)             # c is a function. You can tell because it is followed by 
+                     # parentheses ( ). A function operates on zero, one or more 
+                     # arguments that are specified in the parentheses,
+                     # separated by commas. In this case, c is operating on 
+                     # the 3 arguments 3, 4 and 5
+x2 = c(3,4,5)
+x2            # We have just concatenated, or pasted together, the numbers 3, 4 
+              # and 5 to create the vector x2
+bigjunk = c(junk,junk2)    # the function c now has two arguments junk and junk2 
+                           # which will be joined together
+bigjunk
+
+# how many elements are in junk2?
+length(junk2)        # length is a function. In this case, length is
+                     # operating on the single argument junk2
+                     
+# let's find the mean of the numbers in junk
+junk
+mean(junk)
+
+mean                 # Whenever you type the name of an object, R will list 
+                     # (print) what's in the object. This pertains to data 
+                     # structures, functions, everything. Here, the code is not
+                     # very readable (we'd have to dig down further). What it's
+                     # telling us is the function mean is really a collection of
+                     # functions, one for each type of object for which a mean
+                     # can be calculated. The UseMethod business says R should
+                     # look at the "class" of the object and then choose the
+                     # correct "method" for calculating the mean.
+
+# find the sum
+sum(junk)
+
+# find the product of the numbers
+prod(junk)
+
+# the product is zero because one of the elements is zero
+
+# other functions to try:
+
+min(junk)
+max(junk)
+range(junk)  # Note: the range function returns (gives you) a vector of results
+var(junk)
+cumsum(junk)
+cumprod(junk)
+sin(junk)
+
+# fisheries example. The annual survival rate, S, is related to the total
+#                    instantaneous mortality rate, Z, by S = exp(-Z).
+#                    It follows that Z is related to S by Z = - log(S)
+#                    where log means natural logarithm.
+# Suppose we want to convert Z = .2 into a survival rate. We can do:
+Z = .2
+S = exp(-Z)
+S
+
+# Here's something nice. Suppose we want to have a handy reference so we can
+# judge what various values of Z mean. We can create a vector of Z values and
+# then convert them all to S values in one step.
+Z = seq(from=.05,to=1.5,by=.05)
+Z
+# note this is the same as Z=seq(.05,1.5,.05) (R uses the position of the arguments
+# to know what's what)
+seq(.05,1.5,.05)
+
+S = exp(-Z)
+S
+# There you have it: 30 values of Z and the corresponding values of S. If you 
+# want to save this, you could make it a little more presentable as follows:
+cbind(Z,S)    #Now you can copy and paste the output below into a text file.
+# (We'll look at cbind in more detail later)
+
+# see the list of functions in the file called R-built-in-functions.pdf in the 
+# folder called reference documents & scripts for more functions
+
+# logical expressions  (see file called relational operators - comparisons.r
+# for more about relational operators)
+junk==0   # this is a logical expression. For each element of junk, R will tell 
+          # you TRUE if the element is 0 (i.e., is equal to what's on the right)
+          # or FALSE otherwise. Note the ==
+junk>3
+junk>=3
+
+# Note: we can store the result of logical comparisons in a vector, e.g.,
+biggern3 = junk > 3
+biggern3
+
+Subsetting
+
+# ooops! Why did it say Error: object "Subsetting" not found?
+
+# Subsetting
+
+junk[2]   # second element of the vector junk. Note the square brackets [ ] 
+          # denote a subsetting of the data structure, i.e., we want the second 
+          # element of junk
+
+junk[junk>3]    # elements of junk for which junk>3 is TRUE
+junk[biggern3]  # elements of junk for which junk>3 is TRUE
+junk[c(1,3,2,3)] # this says give me the subset of junk specified by the
+                 # vector c(1,3,2,3), i.e., give me the first, third second and
+                 # third element (again) of junk
+length (junk)
+sex <- c("m","m","f","f","m","f","m","f")   # Note: vectors can contain numbers
+                                            # or character strings 
+sex
+length(sex)
+
+sex=="m"        # logical expressions can be applied to character strings
+junk
+junk[sex=="m"]  # this gives a subset of junk, specifically, the elements of 
+                # junk for which the corresponding elements of sex are "m"
+
+# The numerical value of TRUE and FALSE
+X = TRUE
+X
+sum(X)
+Y = FALSE
+Y
+sum(Y)
+# So, if you try to do arithmetic with TRUE and FALSE values, the TRUE values
+# are treated as 1 and the FALSE values are treated as 0
+                
+length(sex=="m")
+sum(sex=="m")      # so how many of the observations pertain to males?
+mean(sex=="m")     # what does this tell us about the sex ratio?
+##########
+#  Now you should be able to do in-class assignment 1 
+
+##########
+
+range(junk)                  # the range function returns a vector
+range.of.junk = range(junk)  # we can store the vector returned by range( )
+range.of.junk[1]             # print the first element of the vector (the min)
+range.of.junk[2]             # the max
+
+# let's replace the elements of junk that are 0 with NA (NA means Not Available,
+# e.g., missing; see also NaN (= not a number))
+
+junk = 5:-2
+junk[junk==0] <- NA    # this can be read: the elements of junk for which the 
+                       # element of junk is zero gets set to NA
+                    # If you have trouble following this, you can execute each
+                    # part of the command
+
+junk
+                    
+mean(junk)      # R cannot compute the mean because there is one element for
+                # which the value is not available (NA)
+mean(junk,na.rm=T)   # na.rm means remove the NAs. So, this computes the mean
+                     # after disregarding the missing values
+?mean                # this gets us to the built-in (online) help page
+help(mean)           # another way to get to the help page
+
+?var                 # help pages for var and sd are easier to interpret
+?sd 
+sd                   # sd is a simple function and the source code is readable
+ 
+junk[c(2,4)]         # This subsets junk by giving you the 2nd and the 4th
+                     # elements of junk.
+
+junk<-c(1,2,3,4)
+boo <-c(T,F,T,F)    # NOTE that we can write T and F instead of TRUE and FALSE
+
+junk[boo]           # This gives the elements of junk for which the
+                    # corresponding element of boo is TRUE (or T)
+
+#######################
+# more on NA and NaN
+junk <- 5:-2
+junk
+sqrt(junk)    # note the warnings
+
+investigate <- sqrt(junk)
+is.na(investigate)     # Ahh! When you get a NaN (Not A Number) the result is
+                       # NA (Not Available)
+
+log(junk)  
+is.na(log(junk))
+# this is interesting -- -Inf (negative infinity) is not flagged as NA
+
+# by the way, is this log base e or log base 10? To check, go to the help page
+?log
+
+# Some error messages
+testscores          # haven't created testscores yet
+junk(2)             # parentheses means junk is a function
+mean[junk]          # square brackets mean we want a subset
+
+#######################
+#  HANDY-DANDY Rule #2: When R can't find a function check to see if you used
+#  parentheses (indicating a function) when you meant to use square brackets
+#  indicating a subset of a data structure)
+#######################
+
+#######################
+#  HANDY-DANDY Rule #3: When R says an object is not subsettable, check to see
+#  if you're trying to subset a function, i.e., you used [ ] instead of ( )
+#######################
+
+# ***** see also the file called help_understanding_error_messages.doc in the
+# reference documents & scripts folder for a quick summary of common 
+# error messages
+
+# another way to replace values
+junk
+junk.index <- abs(junk)==2  # this can be read: the elements of junk.index are 
+                            # defined according to whether "the absolute value 
+                            # of junk = 2" is true or false
+junk.index
+junk[junk.index] <- NA      # this can be read: the elements of junk for which 
+                            # the corresponding value of junk.index is true 
+                            # gets NA   (Again, if you have trouble with this,
+                            # execute the line in parts. That is, see what is
+                            # junk.index, then what is junk[junk.index] )
+junk
+
+# An interesting, subtle point to note
+junky1 = 1:5
+junky2 = 1:5
+# NOTE the difference between the following 2 commands:
+junky1 = NA     # assigns NA to the name junky1
+junky2[] = NA    # assigns NA to each element of junky2. the [ ] means we want
+                 # a subset of junky2; because we didn't specify what we want, R
+                 # will interpret this to mean we want it all. So, every element
+                 # gets assigned NA
+junky1
+junky2
+ 
+# now let's do some manipulations with junk
+
+junk*2+3      # multiply each element of junk by 2 and add 3 to the results
+
+sum(junk)     # note what happens when you have NAs
+
+sum(junk,na.rm=T)   # we can find the sum of those elements that are not NA
+
+# how does the length function operate when there are NAs?
+length(junk)
+junk
+
+-7/0
+
+# suppose we want to count how many NAs are in the data
+
+junk.na <- is.na(junk)   # junk.na is a logical vector with element = T if the 
+                         # corresponding element of junk is NA; F, otherwise
+junk.na
+sum(junk.na)             # recall that TRUEs have a numeric value of 1
+!is.na(junk)             # the ! operator means "not". Thus we are asking if
+                         # the statement that "is.na is true" is not true.
+                         # In other words, is.na is true for the second element 
+                         # so the statement that it is not true is false. Whew!
+
+# aside: let's look at c() and rep()
+x <- c(2,3)
+rep(x,3)        # relicates the sequence in x three times
+rep(x,c(2,5))   # replicates the first element of x twice and then the second
+                # element five times
+                # ADVICE: it'd be a good idea to read the help page on rep( )
+
+x2<-c(4,5,1)
+rep(x2,c(2,3,5))
+# can you see that the previous statment is equivalent to
+rep(c(4,5,1),c(2,3,5))
+
+junk
+junk2 <- c(4,3,2,1)
+
+junk+junk2     # when you add two vectors the arithmetic proceeds by correspond-
+               # pairs
+
+junk2
+
+junk3 <- c(2,3,4)
+add.vectors = junk2+junk3     # note the warning message. The vectors are of
+                              # different lengths
+add.vectors
+
+#  junk2 contains    4  3  2  1
+#  junk3 contains    2  3  4
+#  add.vectors is    6  6  6  3
+
+# R "recycled" the elements of junk3. That is, after it got to the end of junk3
+# (the value 4) it went back to the beginning of junk3 and used the value 2
+
+junk4 = c(10,20)
+junk2 + junk4       # *** VERY IMPORTANT: junk4 is not as long as junk2 so R
+                    # R recycled junk4. However, because the length of junk2
+                    # is a whole number multiple of the length of junk4 (that
+                    # is, junk2 is 2 times as long as junk4) R did not give a 
+                    # warning message
+
+# Creating matrices
+
+junkmat <- matrix(1:20,nrow=5)    # default is to fill a matrix columnwise
+junkmat2 <- matrix(1:20,ncol=4)
+# if you tell R the number of rows or the number of columns R will figure out
+# the dimensions of the matrix
+junkmat2
+junkmat
+
+j<- c(1,2,3)
+matrix(j,nrow=2,ncol=3,byrow=T) # here we specify matrix should be filled by row
+# Note: 2 rows x 3 columns = 6 cells. j only has 3 elements so j is "recycled"
+# to fill the matrix
+
+junkmat[,3]      # give me the 3rd column. Literally, it means give me
+                 # all rows for column 3
+# Note that if you subset a matrix to have just one row or column, R converts it
+# into a vector. If you want it to remain a matrix you have to specify this.
+as.matrix(junkmat[,3])
+
+junkmat[1:2,3]   # give me rows 1 and 2 for column 3
+junkmat[c(3,1),3]  # give me rows 3 and 1 for column 3
+
+junkmat[1:2,3:4]  # note that this gives me a matrix
+
+dim(junkmat)
+size.matrix<- dim(junkmat)
+# How many columns are there in junkmat?
+size.matrix[2]
+dim(junkmat)[2]
+
+junkmat[,3]>= 13       # logical vector
+junkmat[junkmat[,3]>=13,]  # this is equivalent to junkmat[c(F,F,T,T,T),]
+sillynames = c("boo","hoo","truck","sex","itslateandImtired")
+rownames(junkmat) = sillynames
+junkmat
+junkmat[-3,]   # note that a negative index means EXCLUDE this.
+junkmat[!2,]   # note that the ! does NOT exclude row 2 - it simply doesn't work
+
+# Here is a question that was posted to the R listserver: How can I get just the
+# even rows of a matrix?
+
+x = matrix(1:25,nrow=5,byrow=T)    # create a matrix with 5 rows
+x
+Iwant = seq(from=2,to=dim(x)[1],by=2)  # create a vector with integers starting
+                                       # at 2, going up to the first dimension
+                                       # of x (which is 5), increments of 2
+Iwant                   # the numbers 2 and 4
+x[Iwant,]               # give me rows 2 and 4, all columns
+# how can I get just the odd row?
+x[-Iwant,]              # remember that a negative index means "everything but"
+
+
+# Summary and Review
+#
+# Assignment                 <- and =
+# Listing                    just type the name of the object & execute the line
+# Creating data structures   :          see also seq( )
+#                            c( )
+#                            rep( )
+#
+# built-in functions
+#                            abs( )     absolute value
+#                            as.matrix  coerces a data structure to be a matrix
+#                            c( )       concatenate
+#                            cat( )     print a message
+#                            dim( )     dimensions
+#                            is.na( )   logical: returns TRUE (= 1) if element
+#                                       is an NA. NOTE: the function is NOT
+#                                       called is.NA  (case is important!)
+#                            length( )  length of a vector
+#                            matrix( )  create a matrix
+#                            max( )     maximum value
+#                            mean( )    mean value
+#                            min( )     minimum value
+#                            plot( )    creates a plot of y vs x
+#                            prod( )    gives the product of the numbers
+#                            range( )   minimum and maximum values
+#                            rep( )     replicates a sequence a given number of
+#                                       times
+#                            seq( )     create a sequence of numbers
+#                            sum( )     sum of elements
+#                            var( )     calculates the sample variance
+
+
+#######################
+# HANDY DANDY RULE # 1:  When R cannot find an object, check for typos and 
+# capitalization errors
+#######################
+
+#######################
+#  HANDY-DANDY Rule #2: When R can't find a function check to see if you used
+#  parentheses (indicating a function) when you meant to use square brackets
+#  indicating a subset of a data structure)
+#######################
+
+#######################
+#  HANDY-DANDY Rule #3: When R says an object is not subsettable, check to see
+#  if you're trying to subset a function, i.e., you used [ ] instead of ( )
+#######################

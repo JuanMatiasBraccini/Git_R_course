@@ -1,5 +1,5 @@
 ---
-title: "Part X. General stats"
+title: "Lesson 3. General statistics"
 knit: (function(inputFile, encoding) {
   rmarkdown::render(inputFile, encoding = encoding, output_dir = "C:/Matias/Cursos/2019_Mexico/htmls") })
 output: 
