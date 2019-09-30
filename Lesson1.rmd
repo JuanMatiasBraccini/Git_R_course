@@ -62,8 +62,13 @@ knitr::opts_chunk$set(fig.width = 12,fig.height = 8,
 ```
 
 ## Repositories
+all scripts stored in
+
 https://github.com/JuanMatiasBraccini/Git_R_course
 
+all data, presentations and htmls stored in
+
+https://www.dropbox.com/home/R_course_Mazatlan_2019
 
 
 # Introduction to R and Rstudio

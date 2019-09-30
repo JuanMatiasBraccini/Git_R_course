@@ -6,7 +6,9 @@ knit: (function(inputFile, encoding) {
 
 author: 
 - Matias Braccini
-- Department of Primary Industries and Regional Development of Western Australia
+-
+- Department of Primary Industries and 
+- Regional Development of Western Australia
 date: "7-11 October 2019"
 output: 
     powerpoint_presentation:
@@ -46,7 +48,11 @@ the active memory of the computer in the form of objects which have a name
 - R basics (vectors, matrices, lists and data frames)
 - General statistics
 - Data manipulations
-- 
+- Functions
+- Plotting and Mapping
+- Multivariate stats
+- Population dynamics
+- Other
 
 
 ## Let's get started.......
