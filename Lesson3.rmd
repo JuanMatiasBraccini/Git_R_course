@@ -1,6 +1,5 @@
-<<<<<<< HEAD
 ---
-title: "Part 3. xxxxxxx"
+title: "Part X. General stats"
 output: 
   html_document:
     code_folding: show
@@ -60,66 +59,550 @@ knitr::opts_chunk$set(fig.width = 6,fig.height = 6,
 ```
 
 # Lesson goals
-=======
----
-title: "Part 3. XXXXXXX"
-output: 
-  html_document:
-    code_folding: show
-    highlight: haddock
-    keep_md: yes
-    theme: united
----
+We're going to apply a range of general statistical analyses to real case examples
 
-<style type="text/css">
-h1.title {
-  font-size: 30px;
-    color: Maroon;
-  text-align: center;
-          }
-h3.subtitle {
-  font-size: 22px;
-    color: Maroon;
-  text-align: center;
-            }
-h4.author { 
-    font-size: 24px;
-      color: FireBrick;
-  text-align: center;
-          }
-h4.date { 
-  font-size: 18px;
-  text-align: center;
-        }
-h1{
-  font-size: 22px;
-  color: DarkBlue;
-  }
-h2{
-  font-size: 20px;
-  color: Blue;
-  }
-h3{
-  font-size: 18px;
-  color: SteelBlue;
-  }
-body{
-    font-family: Helvetica;
-    font-size: 14pt;
-    }
-code.r{
-  font-size: 16pt;
-      }
-pre {
-  font-size: 16pt;
-}
-</style>
+Credits to John Hoenig
 
+<br><br>
 
-```{r globaloptions, include=FALSE}
-knitr::opts_chunk$set(fig.width = 6,fig.height = 6,
-                        echo = TRUE, warning=FALSE,message=FALSE)
+# 1. Lemon shark tagging
+```{r}
+
+# 1. Construct a 2x2 table with the first row being the number of male 
+#    sharks tagged and recaptured and the second row being the number
+#    of females tagged and recaptured
+sex.ratio <- matrix(c(59,4,52,17),nrow=2,byrow=T,
+             dimnames=list(sex=c("male","female"),
+                           capture=c("tag","recap")))
+sex.ratio
+fisher.test(sex.ratio)    
+# NOTE: the small p-value indicates that the 
+#       sex ratio of tagged sharks is statistically significantly 
+#       different from that of recaptured sharks. 
+#      (what is the importance of this?)
+
 ```
 
-# Lesson goals
-We're going to .......
+<br>
+## Now let's look at the lack of independence graphically.
+```{r}
+par(mfrow=c(1,1))
+mosaicplot(sex.ratio)
+
+```
+
++ If recapture probability is independent of sex then we should expect
+  to see the two horizontal line segments be a single horizontal line.
++ Instead we see the two line segments are at different heights 
+  indicating lack of independence. 
+
+
+<br>
+
+## Alternatively and equivalently, we could ask if the sex ratio is the same for tagged and recaptured animals.
+Show this graphically by making the mosaic plot for the transpose of the data.
+```{r}
+par(mfrow=c(1,2))
+# compare recapture probability between sexes
+mosaicplot(sex.ratio)
+# compare sex ratios between tagged and recaptured groups
+mosaicplot(t(sex.ratio))
+
+# An alternative to the Fisher exact test is the regular
+# chi-square test which can be done using
+chisq.test(sex.ratio,simulate.p.value=T)
+fisher.test(sex.ratio) 
+# Note that the two tests give very similar p-values
+
+```
+
+<br>
+
+## Now suppose we want to test whether the average movement of males is significantly different from that of females. 
+We can use a t-test
+
+```{r}
+male.move = c(1,2,3,4,5)        # fake data 
+female.move = c(3,4,5,6)        # fake data
+t.test(male.move,female.move)
+# Note the degrees of freedom is 6.981, which is
+    # close to but not exactly 7.
+```
+<br><br>
+
+# 2. Length-converted catch curves
+Length-converted catch curves are described in Pauly (1984). The idea is that
+if you plot the log of the number in each size category versus the
+corresponding relative age, the slope of the descending right limb of the
+curve can be used to get an estimate of the total instantaneous mortality rate.
+
+These data are for banded grouper (<em>Epinephelus sexfasciatus</em>) from the
+Philippines. A number of samples from throughout the year were pooled to
+get a representative picture of the size structure of the population.
+
+```{r}
+# midpoints of length classes (in cm)
+leng.classes = seq(5,27,2)  
+leng.classes
+# number caught in each length category
+numbers = c(5,29,114,162,143,118,61,50,32,17,4,4) 
+numbers                                           
+#check whether the number of size observations equals the
+#   number of size classes   (Yes, each vector is of length 12)
+length(leng.classes) 
+length(numbers)     
+
+```
+<br>
+
+## Do a preliminary plot
+```{r}
+plot(leng.classes,log(numbers))  #nothing looks suspicious
+```
+<br>
+
+## We need the following information to convert length to relative age
+* Linf = Linfinity (asymptotic length) = 30.9
+* K = von Bertalanffy growth coefficient = .51
+
+note: Relative age differs from true age by a constant. 
+That is, true age = relative age + To where To is a
+ parameter of the von Bertalanffy growth equation. 
+ (We don't need To in order to estimate Z)
+```{r}
+ Linf = 30.9
+ K = .51
+ # relative age at the center of each length class
+ relage = -log(1 - leng.classes/Linf)/K  
+ relage
+ plot(relage,log(numbers),typ="b",
+      xlab="relative age, yrs",
+      ylab="log(number)")
+
+ #Regress log(numbers) on relative age
+ catch.curve = lm(log(numbers[5:12])~relage[5:12]) 
+ #Note: we exclude vales on the ascending (left) limb
+ abline(catch.curve)   # add a regression line to the existing plot
+ catch.curve           # look at the regression output.
+# The slope is -1.322. We obtain an estimate of Z from the slope 
+#  by adding K to the absolute value of the slope
+ 
+ Z = K + abs(-1.322)
+ Z
+```
+<br>
+
+## Is the last datapoint on the right very influential?
+
+```{r} 
+#Refit everything after omitting the 12th (last) datapoint
+catch.curvenew = lm(log(numbers[5:11])~relage[5:11])
+catch.curvenew
+Z = K + abs(catch.curvenew$coefficients[2])
+Z
+# yes, that last datapoint is somewhat influential
+#  ..deleting it causes the estimate of Z to go up 
+#  from 1.83 to 2.07
+100*(2.07-1.83)/1.83
+# Deleting the last datapoint increased the estimate of Z by 13%,
+# ...not such a big deal.
+```
+
+<br><br>
+
+# 3. Linear models
+```{r}
+#1. Generate some data for a linear regression
+set.seed(3249)
+# This sets the starting point for the random number generators.
+  #intercept
+b0 = -5                  
+  #predictors
+x1 = rnorm(40,20,4)      # generate values of independent variable 1
+x2 = x1 + rnorm(40,30,4) # generate 2nd indep. variable. Note x1 & x2 
+                         # correlated
+b1 = 1.5                 # true coeff. (slope) for x1
+b2 = -.1                 # true coeff. for x2
+
+sex = as.factor(rep(c("m","f"),c(20,20))) #factor
+
+  # dependent variable
+y = b0 + b1*x1 + b2*x2 + rnorm(40,0,4)    
+
+  #create data set
+thedata = cbind(x1,x2,sex)
+head(thedata)
+
+#2. Look at the data
+plot(x1,x2,pch=as.character(sex))
+plot(x1,y,pch=as.character(sex))
+plot(x2,y,pch=as.character(sex))
+
+# look at the correlations of y with the explanatory variables
+#  and also the correlation among the explanatory variables
+cor(cbind(y,thedata))
+
+# another thing we can do is look at partial correlations: 
+# Compute a matrix of partial correlations between each pair 
+# of variables controlling for the others 
+
+# you will need this package
+library(Rcmdr)   
+partial.cor(cbind(y,thedata))
+# We can see that:
+# cor between y and x1 is 0.76 after controlling for x2 and sex;
+# cor between y and x2 is -0.42 after controlling for x1 and sex 
+
+
+#3. Simple linear regression
+# fit linear regression (store results in first.example)
+first.example = lm(y~x1) 
+summary(first.example)     # look at output
+abline(first.example)      # add the regression line
+
+# look at graphs produced by plot()
+par(mfrow=c(2,2))      #4 graphs per page, 2 rows, 2 columns
+plot(first.example)  
+
+par(mfrow=c(1,1)) # this just resets par so you'll get 1 per page
+                  
+# plot residuals to look for lack of fit (trend)
+#       & nonconstant variance
+plot(fitted(first.example),residuals(first.example),typ="h")
+# typ="h" plots distances from 0
+
+abline(h=0)    # add horizontal line at 0
+
+# now make a Q-Q plot of the residuals to check for normality
+#(note: Quantile-Quantile, i.e Q-Q, plots help assessing if a 
+#       a set of data came from some theoretical distribution,
+#       Normal in our case. If both data sets come from the 
+#       same distribution,they should form a line)
+qqnorm(residuals(first.example),ylab="Residuals")
+
+# this adds a line joining the first and third quartiles
+qqline(residuals(first.example)) 
+
+                                 
+# histogram of residuals 
+hist(residuals(first.example))
+
+# confidence intervals for the slope & intercept
+confint(first.example)     
+
+# get the anova table for the regression
+anova(first.example)
+
+
+#4. Force the regression to pass through the origin
+second.example = lm(y ~ x1 - 1)  #the "- 1" means "no intercept"
+summary(second.example)
+plot(x1,y,ylim=c(0,40),xlim=c(0,30))
+abline(second.example)
+
+par(mfrow=c(2,2))
+plot(second.example) # Look for patterns to the residuals
+
+
+#5. Multiple linear regression
+par(mfrow=c(1,1))
+# first regress y on x1 and on x2 (separately)
+summary(lm(y~x1))
+summary(lm(y~x2))
+# quite clearly (look at r2), x1 is a better predictor than x2.
+# Does x2 help if we already have x1?
+
+summary(lm(y ~ x1 + x2))     
+# both variables are significant
+
+model1 = lm(y~x1)       # store the results of the first model
+model12 = lm(y~x1+x2)   # store the results of the second model
+anova(model1,model12)    # list null (reduced) model first.
+# We see that we reject the null hypothesis that the reduced model, 
+#  i.e. model1, is sufficient ... so we also need x2
+
+
+# Fitting with an OFFSET
+#   Suppose that for theoretical reasons we believe the
+#   coefficient for x2 should be -0.15 and we want to include
+#   a term -.15 x2 in the model. This is called an offset and 
+#   it is specified as follows:
+lm(y ~ x1 + offset(-.15 * x2))
+
+
+# Fitting models with INTERACTIONS
+#   We use the colon operator (:) to specify a model with an 
+#   interaction between x1 and x2, corresponding to the model:
+#      y = b0 + b1 x1 + b2 x2 + b3 x1 x2 + error
+fullmod = lm(y ~ x1 + x2 + x1:x2)
+summary(fullmod)
+# NOte that now nothing is significant.
+# This does not mean that nothing is significant!
+# We should eliminate the interaction term and then 
+# we'll get significant results. 
+
+
+#An easy way to do this is with the update() function
+no.interact = update(fullmod, . ~ . - x1:x2)
+# in the above, '.' means everything as in full mod,
+# and the -x1:x2 means "but remove the interaction between x1 and x2"
+summary(no.interact)    # now x1 and x2 are significant
+
+# anova to compare model without (null) and with interaction
+anova(no.interact,fullmod)  
+#Model with interaction is not significant, which makes sense 
+# because we created the data without an interaction.
+
+
+```
+<br>
+
+# 4. ANOVA
+## 4.1 One-way anova
+```{r}
+# 1. Generate data for 1-way anova
+ydat = rnorm(100,0,5)          # generate 100 random numbers
+# create treatment effects 
+# add to the random errors (ydat) to create the observations
+add = c(rep(0,20),rep(5,20),rep(1,20),rep(7,20),rep(12,20)) 
+add   # this is just a string of 20 zeros, 20 fives, 20 ones, etc.
+      # this represents the means for each of the 5 treatments
+ydat = ydat + add   # this is the treatment mean plus a random error
+
+# create a vector to indicate the treatment foreach observation 
+nutrients = rep(1:5,rep(20,5))   
+# (The above is just a fancy way to create a
+# vector of 20 ones, 20 twos, 20 threes, 20
+# fours and 20 fives)
+
+nutrients 
+
+#2. Fit one-way anova                     
+example5 = lm(ydat~nutrients)
+summary(example5)
+# SEEMS to work...
+# but lm() is treating nutrients as a 
+# quantitative variable rather than as a label for the 
+# treatment level. That's why the output has an intercept 
+# and slope instead of treatments. It's doing a linear regression.
+# We need to make nutrients a vector of FACTOR levels. 
+# Then lm() will do a one-way anova.
+
+is.factor(nutrients) # nutrients is not a factor
+nutrients = as.factor(nutrients)   # "coerce" (convert) to factor levels
+nutrients             # note the levels appearing below the listing
+is.factor(nutrients)  # yes, nutrients is now a factor vector
+
+boxplot(ydat~nutrients)  #visualise treatment effects
+
+example5 = lm(ydat~nutrients)
+#Look at treatment levels
+example5
+
+# OK, we have our estimates
+summary(example5)
+#But what are we looking at?
+
+
+# get the mean of the ydat values for each level of nutrients
+tapply(ydat,nutrients,mean)
+
+
+# So, here's what's happening: summary(example5) gives you the mean
+# for treatment 1 (which it calls "(intercept)"). 
+# It also gives you the 
+# TREATMENT EFFECTS for the other treatments, which are the
+# amounts by which the treatment mean differs from 
+# the mean of treatment 1.
+
+par(mfrow=c(2,2))   
+plot(example5)
+# no pattern to the residuals; the normal Q-Q plot looks quite
+# linear (slight departures at the ends, notwithstanding)
+
+par(mfrow=c(1,1))
+
+# get the anova table
+anova(example5)     
+
+# multiple comparisons using Tukey's Honest Significant Differences
+  # need output from aov(), not lm()
+example5a = aov(ydat~nutrients)   
+
+  # tabular results
+TukeyHSD(example5a)
+
+  # graphical results
+plot(TukeyHSD(example5a))         
+
+# Note: from the summary() output we saw that the estimate for 
+# nutrient level 3 was not statistically significant. 
+# We KNOW that in fact the data for nutrient level 3 were 
+# drawn from a population with a mean of 1 whereas the 
+# data for nutrient level 1 were drawn from a population 
+# with a mean of 0, i.e. treatments 1 and 3 ARE different).
+# But, the difference in means is so slight that we wouldn't 
+# be surprised to see non-siqnificant results. Hence,
+# as data analysts we might want to consider combining 
+# treatments 1 and 3. We do that below.
+
+
+# Make a copy of the nutrients factor
+nutrientsmod = nutrients 
+
+# Make the label for both treatments 1 and 3 be "control"
+levels(nutrientsmod)[c(1,3)] = "control"  
+nutrientsmod
+
+example6 = lm(ydat~nutrientsmod)
+
+#Compare the fits of the two models.
+anova(example6,example5)
+# The p value for Model 2 (with the additional factor 
+# level) is large suggesting there is little support 
+# including an effect for nutrient level 3
+              
+# Note that in doing the comparison, we specify the
+# model with fewer parameters first.
+
+```
+
+<br>
+
+## Two-way anova
+```{r}
+###############################
+#1. generate data for 2-way anova by creating vector of temperature treatments
+temp = rep(c("low","high"),10)
+temp    # note: this is a character vector, not a factor vector
+temperature = as.factor(rep(temp,rep(5,20)))
+levels(temperature)
+# NOTE: we are not modifying the data according to temperature so 
+#       temperature should not be significant
+
+#2. fit two-way ANOVA without interactions
+example7 = lm(ydat ~ nutrients + temperature)
+summary(example7) 
+ # summary() gives the fitted (predicted) mean for high temperature and 
+# nutrient level 1 (labelled (intercept)). To get the prediction for nutrient
+# level 2 and high temperature add the estimate for nutrients2 to the
+# intercept, and do similarly for nutrient levels 3, 4 and 5. To get
+# estimates for low temperature, subtract the estimate labelled 
+# temperaturelow from the corresponding estimate for high temperature.
+   
+confint(example7) # confidence intervals for the estimated parameters
+
+anova(example7)
+# nutrient level is highly signficant 
+# temperature is not significant
+
+
+# Compare the fit of the model with and without temperature.
+# We can do that using anova() as follows:
+anova(example5,example7)
+# we see that example7 (labelled Model 2) shows 
+# almost no improvement over example5 (labelled Model 1)
+# so we have extremely little justification for including
+# temperature in the model.
+
+
+# Multiple comparisons
+
+  # repeat using aov
+example7a = aov(ydat ~ nutrients + temperature) 
+
+  # tabulate results
+TukeyHSD(example7a)
+
+  # graphical results
+par(mfrow=c(2,1))
+plot(TukeyHSD(example7a))         
+
+
+#3. fit two-way ANOVA with interactions
+example8 = lm(ydat~ nutrients + temperature + nutrients:temperature)
+# the above can also be specified more briefly as:
+example9 = lm(ydat ~ nutrients*temperature)
+summary(example8)
+# not surprisingly, the estimate for the effect of
+# temperature and the estimates of the interactions are not
+# statistically significant
+
+summary(example9)
+# exactly the same as example8
+
+#Check what predictors are significant
+anova(example8)
+# only nutrients are statistically significant
+
+#Compare all 3 models at once.
+anova(example5,example7,example8) 
+# Neither Model 2 nor Model 3 (example7 and example8, respectively)
+#   are a signficant improvement over the simpler model with just 
+#   nutrient effects
+
+```
+
+## Useful functions for linear models
+
+* add1()    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Add or Drop All Possible Single Terms to a Model
+* aov()     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; alternative to lm()
+* anova()   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; create an anova table for a fitted model
+* bartlett.test() &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; test for non-homogeneous variances (or use xxx)
+* coef()  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; extract the parameter estimates
+* confint() &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Confidence Intervals for Model Parameters
+* drop1()   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Drop All Possible Single Terms to a Model
+* extractAIC()  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Extract AIC from a Fitted Model (see also step() below)
+* fitted()      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Extract fitted values
+* lm()           &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Fit Linear Models
+* manova()       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Multivariate Analysis of Variance
+* model.matrix()  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; show the design matrix (X matrix) used by R to fit the linear model
+* oneway.test()   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; one-way anova without assumption of homogeneous variances
+* pairwise.t.test() &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Calculate pairwise comparisons between group levels  
+* poly()          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; fit models with a polynomial function of x
+* predict()
+* replications()  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Returns a vector or a list of the number of replicates 
+* residuals()
+* step()          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Choose a model by AIC in a Stepwise Algorithm
+* termplot()      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Plots regression terms against their predictors
+* TukeyHSD()      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Compute Tukey Honest Significant Differences, i.e., do
+                # multiple comparisons. Apply it to an object generated by aov(), NOT lm()
+* update()        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Use this to remove one or more terms from a linear model 
+
+### The multcomp library provides a variety of multiple comparison procedures and procedures for testing linear hypotheses about treatment effects.
+
+### Many generic functions like summary, predict, fitted and residuals can be used with linear models
+
+<br>
+
+## Wrap up exercise
+1. Read in 'Lesson3_linear.model.exercise.csv' from https://github.com/JuanMatiasBraccini/Git_R_course
+(tips: save data to local disk; ?'read.csv'; define your working directory)
+2. Fit linear model
+3. Look at outputs 
+4. Extract anova table (which model terms are significant?)
+
+
+<br>
+
+## Solution
+```{r}
+#1. read in data
+thedata=read.csv('Lesson3_linear.model.exercise.csv')
+
+#2. fit linear model
+Mod1=lm(Response ~ Pred1 + Pred2+Pred3+Factor1,data=thedata) 
+
+#3. Look at outputs
+summary(Mod1)
+#4. Extract anova table
+AOV=anova(Mod1)
+AOV
+```
+
+
+<br><br>
+
+
+# 5. ANOVA
+

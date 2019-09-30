@@ -59,7 +59,7 @@ knitr::opts_chunk$set(fig.width = 6,fig.height = 6,
 ```
 
 # Lesson goals
-We're going to do create data frames and do some plotting.
+We're going to create data frames and do some plotting.
 
 ```{r }
 #make sure to start with a clean slate, with no junk in memory 
