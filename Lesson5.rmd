@@ -1,0 +1,1936 @@
+---
+title: "Lesson 5. Data manipulations"
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "C:/Matias/Cursos/2019_Mexico/htmls") })
+
+output: 
+  html_document:
+    code_folding: show
+    highlight: haddock
+    keep_md: yes
+    theme: united
+---
+
+<style type="text/css">
+h1.title {
+  font-size: 30px;
+    color: Maroon;
+  text-align: center;
+          }
+h3.subtitle {
+  font-size: 22px;
+    color: Maroon;
+  text-align: center;
+            }
+h4.author { 
+    font-size: 24px;
+      color: FireBrick;
+  text-align: center;
+          }
+h4.date { 
+  font-size: 18px;
+  text-align: center;
+        }
+h1{
+  font-size: 22px;
+  color: DarkBlue;
+  }
+h2{
+  font-size: 20px;
+  color: Blue;
+  }
+h3{
+  font-size: 18px;
+  color: SteelBlue;
+  }
+body{
+    font-family: Helvetica;
+    font-size: 14pt;
+    }
+code.r{
+  font-size: 16pt;
+      }
+pre {
+  font-size: 16pt;
+}
+</style>
+
+
+```{r globaloptions, include=FALSE}
+knitr::opts_chunk$set(fig.width = 6,fig.height = 6,
+                        echo = TRUE, warning=FALSE,message=FALSE)
+```
+
+# Lesson goals
+We're going to manipulate data, i.e. clean it, reshape it, aggregate, use loops, etc.
+
+<br>
+Credits to John Hoenig, Ainslie Denham and Alex Hesp
+<br><br>
+
+
+# First, make sure we start with a clean slate, with no junk in memory (as could occur if we
+# had run something previously in another R file). After running this, there should be nothing
+# in the top right environment window.
+rm(list=ls())
+
+# There is a plotting function, which specifies information regarding number of
+# plots on a page, and how they are positioned, and how much space around each plot. 
+# Here, we are saying 1 plot per page, which is the R default, but if you had other 
+# spreadsheets open without closing R, this may not be set at the default. 
+# More on these functions in the code below.
+# mar= margin
+# mfcol or mfrow specifies in which order you want multiple plots on a page
+par(mfcol=c(1,1),mar=c(4,4,2,2))
+
+# Let's read in some age and length data from a .csv file and have a quick look at it
+LenAgeDat <- read.csv("LenAtAgeData.csv", header = T)
+head(LenAgeDat)
+tail(LenAgeDat)
+
+# what variables/fields do we have?
+names(LenAgeDat)
+
+# What areas are there in the data set? Areas 1 and 2, that's pretty hopeless,
+# should have included a text variable describing where areas 1 and 2 are. But
+# anyhow, let's keep going
+unique(LenAgeDat$Area)
+
+# what sexes are there?
+unique(LenAgeDat$SexNameVec)
+
+# Levels in result indicates the structure type (text)is stored as a factor ie. Female=1 , Male =2. Defaults by alphabetical order
+
+# and there is a corresponding numeric code for sex
+unique(LenAgeDat$SexNumVec)
+
+# seems reasonable, its not like there are 3 or 1, when we know there
+# should be 2 sexes (females and males)
+
+# Let's get a bit of information regarding the age data
+summary(LenAgeDat$ObsAge)
+# OK, a fairly short-lived fish, with maximum age of 10, with some fish caught at one.
+
+# Let's store the min and max age
+(MinAge <- min(LenAgeDat$ObsAge))
+(MaxAge <- max(LenAgeDat$ObsAge))
+# remember, if we put brackets around the thing, then it will print out to the console
+
+# we can also get the range this way
+AgeRange <- range(LenAgeDat$ObsAge)
+
+# so we could also store the minimum and maximum ages as variables this way, if we wanted to
+(MinAge <- AgeRange[1])
+(MaxAge <- AgeRange[2])
+
+# Let's make a vector containing our age categories, which we can 
+# use later in plotting, for example (to create x axis)
+(AgeClasses <- seq(MinAge,MaxAge,1))
+
+# What about length? Let's learn a bit more
+summary(LenAgeDat$ObsLen)
+# up fish gets up to around 350-400 
+# What fish is this mystery fish or invertebrate species?, 
+# maybe a herring or whiting, or an occy or squid - can age these sometimes!
+# Anyway, let's start by focusing on the age data, to produce age frequency
+# plots
+
+# so, what would be the age composition fish for females in area 1?
+# We can subset the data for female fish in area 1
+# first subset for area. 
+SubDat <- LenAgeDat[LenAgeDat$Area==1,]
+head(SubDat)
+# so in LenAgeDat[LenAgeDat$Area==1,], we are saying, in the data frame called
+# LenAgeDat, take the rows for which the area column has a value of 1 (it is
+# the row column because its left of the comma in the square brackets). 
+# In other words, think of [row,column] when you're subsetting using square brackets. 
+# Because we've put nothing after the comma in the brackets, we are saying keep all the columns
+# in the original data frame, but subset for specific rows.
+# Then we assign this (i.e. by using <-) to the new variable I called SubDat, so the 
+# subset of data is in memory. By using a different variable name, i.e. Subdata rather
+# than LenAgeDat, we keep the original data unchanged in memory, and have the subset
+# we want in memory under the name SubDat. You can also check this in your environment window.
+
+# how much data have we got. Looking at the environment window, it says there
+# are 157 observations for SubDat. Let's check it another way
+(length(SubDat$ObsAge))
+(length(SubDat$ObsLen))
+# so there are 157 age observations, 157 length observations and so on. If there
+# were different numbers of ages and lengths, that could mean a problem, but OK here
+
+# Generally you can check the number of observations by checking the length of any column,
+# noting there could be some missing entries for some variables you 
+
+# Another way is to check the dataframe "dimensions"
+dim(SubDat)
+# so the data frame has 157 rows and 5 columns
+
+# Now, let's subset the data further, for females
+SubDat <- SubDat[SubDat$SexNameVec=="Female",]
+# Here, because I've used the name SubDat on both the left and right of the
+# assingment sign (<-), we overwrite the original subsetted data (containing all
+# data for area 1) with a data frame containing only females in area 1, 
+# Why, because that's what I decided I wanted: a less obtuse answer is that, for my analyses, 
+# what works well is to always keep the original dataframe read in unchanged, subsetting this
+# as required, but not necessarily storing the various data subsets I make after I get what I want
+# from them (otherwise, can be messy)). Note, it is easy to just subset again from the original 
+# dataframe as long as this is never overwritten
+
+# how many observations now? Environment window says its gone down to 75.
+dim(SubDat)
+
+# We could end up with the same result produced by the above two lines of code
+# using this single line of code, by subsetting our original data frame  
+# to contain data for only females in area 1 in a single go,
+SubDat <- LenAgeDat[LenAgeDat$Area==1 & LenAgeDat$SexNameVec=="Female",]
+
+# So here, we've asked to retain only the rows of data for which area = 1 and
+# sex = Females. Either way is fine.
+
+# So now, let's look at the age and length composition data for females in area 1 and, 
+# like in the previous session, plot these
+
+# Let's start with the age data. How many fish do we have for each age?
+table(SubDat$ObsAge)
+
+# Let's use the frequency function to plot it
+AgeCats <- c(0,AgeClasses)
+HistData=hist(SubDat$ObsAge, breaks=AgeClasses, right=FALSE, col="pink", 
+              main="", xlab="Age class", ylab="Frequency",las=1,xlim=c(0,10))
+
+# if we want, we can look at the ages and corresponding frequencies this way
+HistData$breaks # ages
+HistData$counts
+# frequencies at corresponding ages (same result as from table function above)
+
+# OK, great, what about males in area 1. Let's subset again
+SubDat <- LenAgeDat[LenAgeDat$Area==1 & LenAgeDat$SexNameVec=="Male",]
+HistData=hist(SubDat$ObsAge, breaks=AgeClasses, right=FALSE, col="light blue", 
+              main="", xlab="Age class", ylab="Frequency",las=1,xlim=c(0,10))
+
+# OK, great, what about females in area 2. Yeah, it's working, but we seem
+# to be repeating the same code over and over again - tedious!
+SubDat <- LenAgeDat[LenAgeDat$Area==2 & LenAgeDat$SexNameVec=="Female",]
+HistData=hist(SubDat$ObsAge, breaks=AgeClasses, right=FALSE, col="pink", 
+              main="", xlab="Age class", ylab="Frequency",las=1,xlim=c(0,10))
+
+# OK, great, what about males in area 2. Let's subset again.
+SubDat <- LenAgeDat[LenAgeDat$Area==2 & LenAgeDat$SexNameVec=="Male",]
+HistData=hist(SubDat$ObsAge, breaks=AgeClasses, right=FALSE, col="light blue", 
+              main="", xlab="Age class", ylab="Frequency",las=1,xlim=c(0,10))
+
+# Imagine we had 10 or 20 plots to do. Apart from being very tedious, I hear a 
+# a voice loud and clear (from Ainslie?) telling me "this is very bad coding" and
+# that its "way too verbose!" 
+# Yep, I agree (this time). What's bad about it?
+# Well, like I said, we are repeating the same code over
+# and over again (as this text is also getting repetetive - sorry!). 
+# Apart from making the whole thing unnecessarily long and tedius
+# to go through (particularly if we had more plots to do), every time you repeat 
+# some code, there is a chance of making an error in one of them. Better to do it once, 
+# check that bit lots, and keep using it once you're sure it correct.
+
+# So, what's the solution? Use "loops".
+
+# So, first, let's talk about loops. Let's say we want to do something five times,
+# say, starting at zero, add one to the number five times (answer should be 5, right?)
+# Let's do it without a loop first. Let's call the variable for our number "i"
+# first, set i to zero
+i = 0
+# now, add one
+(i = i + 1)
+# do it again
+(i = i + 1)
+# a third time
+(i = i + 1)
+# a fourth time
+(i = i + 1)
+# a fifth time
+(i = i + 1)
+
+# Here's what a loop can look like. This one is called a "for" loop. There are other sorts which
+# can be handy. Roughly speaking, it works like this
+# i <- 0
+# for (LetsCount in FromThisNumber:ToThisNumber) {
+#     do something that you want to do, and repeat every time we count up (or down)
+# }
+
+# So in our case, we could say
+FromThisNumber <- 1
+ToThisNumber <- 5
+
+i <- 0
+for (LetsCount in FromThisNumber:ToThisNumber) { # remember, we always use curly brakets when specifying a loop
+  
+  # this is the bit we want to repeat
+}
+i # let's see the result after we've finished looping (hard to see it while looping 
+# adding in more code, so let's not worry about it, just look at it at the end)
+
+# which is the same as
+i <- 0
+for (j in 1:5) {
+  i <- i + 1
+}
+i
+
+i <- 0 
+for (j in 1:5) {i <- i + 1}
+i
+
+# which is also the same as
+i = 0
+for (j in 1:5) {
+  i = i + 1
+}
+i
+# where I've used "=" instead of "<-"
+
+# which is also, by the way, the same as saying
+i = 0
+for (j in seq(from=1,to=5,by=1)) {
+  i = i + 1
+}
+i
+
+# so, let's say we wanted to loop backwards from 5 to 1
+i = 0
+for (j in seq(from=5,to=1,by=-1)) {
+  i = i + 1
+}
+i
+# we get 5? Why? Well, even though we are going backwards, the thing
+# we are doing, adding 1 to i each time, is still happening 5 times
+
+# did we really go backwards and end up at 1? What's the value of our
+# loop counter variable?
+j
+# yes, after looped, it's now at 1!
+
+# any way of seeing what happened to i each time we looped?
+# yes, here it is!. Here's some funky code that might be 
+# useful!
+i = 0
+for (j in seq(from=5,to=1,by=-1)) {
+  cat("in loop number",j,"before adding one, i = ",i,"\n")
+    i = i + 1
+  cat("in loop number",j,"after adding one, i = ",i,"\n")
+}
+i
+# using for what we call debugging (finding errors!), when using loops
+# I've almost never used this in R, but actually, it looks pretty useful!
+?cat
+# so cat is to do with producing output for an R object (our variables, such as 
+# j and i)
+# and "\n" is to do with printing output to the console - it moves each bit of 
+# text onto a new the line below so that it doesn't end up a really long line of text
+# we use quotes for what we want as text, and through in our variables,
+# and away we go! I don't use this often, so don't worry if you don't quite
+# understand it (just useful for understanding what is going on when looping,
+# and finding errors - or "debugging")
+
+# say we wanted to go forwards to 1000, in increments of 2
+i = 0
+for (j in seq(from=1,to=1000,by=2)) {
+  i = i + 1
+}
+i
+# 500, yep! think you've probably got the drill!
+
+# but we could get the same answer by doing this
+length(seq(from=1,to=1000,by=2))
+
+# so we don't always want to do loops - only when it helps
+# us stop repeating stuff and making messy code. Note also that
+# using too many loops in code can slow things down (so if you are
+# doing something that's taking lots of time to run, look for loops
+# and see if you can do the same thing without them - e.g. use vectorised
+# calculations) 
+
+# So, lets now do something that might be useful with this type of loop.
+# Let's plot the age compositions for females and males in area 1.
+# so we want to repeat the same commands twice, once for females in area 1
+# and once for males in area 1
+
+# here, we're dealing with area 1, so lets subset the data for this area first
+SubDat <- LenAgeDat[LenAgeDat$Area==1,] 
+head(SubDat)
+tail(SubDat)
+for (sex in 1:2) {
+  # we need to subset for sex. Let's use the numeric variable for sex where
+  # 1 = females and 2 = males. For the first loop we want females, which is
+  # when SubDat$SexNumVec = 1, and for the second loop we want males, when
+  # SubDat$SexNumVec = 2.
+  # Notice that we use the variable "sex", i.e. our looping variable, to
+  # identify which data to subset, based on current integer value for sex - nice!
+  # Notice also that I've created a new dataframe for the data that has been subsetted
+  # for both sex and area, as here, I do not want to lose the data frame called
+  # SubDat, which contains all the data for area 1 (otherwise it won't work!)
+  SubDatForSex <- SubDat[SubDat$SexNumVec==sex,] 
+  
+  # Now let's graph it. Same as before, just need to make sure we have the right
+  # subsetted data frame
+  HistData=hist(SubDatForSex$ObsAge, breaks=AgeClasses, right=FALSE, col="pink", 
+                main="", xlab="Age class", ylab="Frequency",las=1,xlim=c(0,10))
+  
+}
+# gave us at least one plot - did it really work, or were the plots already there from before?
+# Let's get rid of all the plots - we do this by clicking on the paint brush at the top of
+# the plot window - click yes. Let's run it again - same as above, without the comments.
+
+for (sex in 1:2) {
+  SubDatForSex <- SubDat[SubDat$SexNumVec==sex,] 
+  HistData=hist(SubDatForSex$ObsAge, breaks=AgeClasses, right=FALSE, col="pink", 
+                main="", xlab="Age class", ylab="Frequency",las=1,xlim=c(0,10))
+}
+
+# Click on the arrows at the top of the plot window, yep, there are definitely two plots
+# but both the same colour. Say I wanted blue for males and pink for females - how very
+# old school!
+
+# specify a vector with the colours we want in the right order, noting the first
+# sex if female, and the second is male
+(Colour <- c("pink","light blue"))
+Colour[1]#to check that pink gives 1 in below code
+for (sex in 1:2) {
+
+  SubDatForSex <- SubDat[SubDat$SexNumVec==sex,] 
+  
+  HistData=hist(SubDatForSex$ObsAge, breaks=AgeClasses, right=FALSE, col=Colour[sex], 
+                main="", xlab="Age class", ylab="Frequency",las=1,xlim=c(0,10))
+}
+# so it worked. The bit we changed is col=Colour[sex]. Note again, we referred to our
+# loop counter variable, sex. Handy feature! We'll use this over and over again for
+# different reasons.
+
+# say we wanted a label for "Females" and "Males"
+# Create a vector containing the labels we want, in the right order.
+(SexLabel <- c("Females","Males"))
+for (sex in 1:2) {
+  
+  SubDatForSex <- SubDat[SubDat$SexNumVec==sex,] 
+  
+  HistData=hist(SubDatForSex$ObsAge, breaks=AgeClasses, right=FALSE, col=Colour[sex], 
+                main=SexLabel[sex], xlab="Age class", ylab="Frequency",las=1,xlim=c(0,10))
+}
+# Bit we changed was main=SexLabel[sex], again, using the loop variable
+
+# So, say we wanted to see both plots at the same time. 
+# We use can use this line - par(mfcol=c(1,2))
+par(mfcol=c(2,1))
+for (sex in 1:2) {
+  
+  SubDatForSex <- SubDat[SubDat$SexNumVec==sex,] 
+  
+  HistData=hist(SubDatForSex$ObsAge, breaks=AgeClasses, right=FALSE, col=Colour[sex], 
+                main=SexLabel[sex], xlab="Age class", ylab="Frequency",las=1,xlim=c(0,10))
+}
+# very nice, if I don't say so myself! So above with plotting functions, "par"
+# and "mfcol",par(mfcol=c(1,2)), the 1 means give us 1 row of plots, and 
+# the 2 means give us to columns of plots. Try changing the order
+# of these two numbers and see what happens. 
+
+# OK, we're flying, but remember, we had two areas. What might be nice is to have 
+# four plots displayed at once, with say females in column 1 and males in column 
+# 2, with area 1 plots in row 1 and area 2 plots in area 2. So how? Add another 
+# loop, this time for area, remember to subset for area as well as sex at the same
+# time, and modify the numbers in the par() function. For this, we need our
+# original data frame to start with, containing the data for both areas and sexes.
+(AreaLabel <- c("Area1","Area2"))
+par(mfcol=c(2,2))
+for (area in 1:2) {
+  for (sex in 1:2) {
+
+    #SubDatForSex <- SubDat[SubDat$SexNumVec==sex,] is changed to    
+    SubDatForSex <- LenAgeDat[LenAgeDat$Area==area & LenAgeDat$SexNumVec==sex,] 
+    
+    #HistData=hist(SubDatForSex$ObsAge, breaks=AgeClasses, right=FALSE, col=Colour[sex], 
+    #              main=SexLabel[sex], xlab="Age class", ylab="Frequency",las=1,xlim=c(0,10)) is changed  slightly to
+    
+    HistData=hist(SubDatForSex$ObsAge, breaks=AgeClasses, right=FALSE, col=Colour[sex], 
+                  main=c(AreaLabel[area],SexLabel[sex]), xlab="Age class", ylab="Frequency",las=1,xlim=c(0,10))
+  } # sex loop
+} # area loop
+
+# paste function in labels will give you the label on one line vs 2 ie. if you were to combine ie c(AreaLabel{area}etc..)
+# would give you both labels (for area and sex) but over 2 separate lines (see Alex eg. below)
+
+# Cool R trick! It's good coding practice (in my humble opinion and many others) 
+# when using loops to indent code, and if using multiple loops, to line up the brackets 
+# so that inner loops are indented. I also prefer to write a comment at the end of each closing bracket
+# identifying which loop it belongs to - very useful if looping around a larger
+# chunk of code. Now for the trick - highlight all of the code for the loop, cut and then
+# paste - R will automatically align the brackets for you!
+
+#The graph labels are also a bit gaudy! We can reduce font size with cex.main,
+# and make the label extend over a single line, using paste function (need to
+# remove the combine function)
+for (area in 1:2) {
+  for (sex in 1:2) {
+    
+    SubDatForSex <- LenAgeDat[LenAgeDat$Area==area & LenAgeDat$SexNumVec==sex,] 
+    
+    # rather than main=c(AreaLabel[area],SexLabel[sex]), use main = GraphTitle
+    # specifying GraphTitle as:
+    GraphTitle <- paste(AreaLabel[area],"-",SexLabel[sex])
+    
+    HistData=hist(SubDatForSex$ObsAge, breaks=AgeClasses, right=FALSE, col=Colour[sex], 
+                  main=GraphTitle, cex.main = 0.8, xlab="Age class", 
+                  ylab="Frequency",las=1,xlim=c(0,10))
+  }
+}
+
+# plot looks pretty good but I said "What might be nice is to have 
+# four plots displayed at once, with say females in column 1 and males in column 
+# 2, with area 1 plots in row 1 and area 2 plots in area 2". We've got females
+# and males in each column, not what I wanted. Let's fix it. 
+par(mfrow=c(2,2))
+for (area in 1:2) {
+  for (sex in 1:2) {
+    
+    SubDat <- LenAgeDat[LenAgeDat$Area==area & LenAgeDat$SexNumVec==sex,] # subet data
+    
+    GraphTitle <- paste(AreaLabel[area],"-",SexLabel[sex]) # create graph label
+
+    HistData=hist(SubDat$ObsAge, breaks=AgeClasses, right=FALSE, col=Colour[sex], 
+                  main=GraphTitle, cex.main = 0.8, xlab="Age class", 
+                  ylab="Frequency",las=1,xlim=c(0,10)) # plot it
+  }
+}
+# changed mfcol to mfrow, which changes how the plots are shown on the page - fills out the first two plots
+# created in row one (i.e. across columns) before putting any plots on row two, rather then filling out the
+# first two plots created in column 1 (i.e. across rows) before putting any in column two.
+
+# all in all, not much code for four whole plots, with some good formatting to boot!
+
+# How about we now look at the length data, to create some length frequency plots
+
+# Let's store the max length
+max(LenAgeDat$ObsLen)
+# Note, I'm using our original data frame. I was careful never to overwrite it when
+# subsetting so I can use it later, with confidence, that we are still working with the
+# full set of data. This is something to be very conscious of!
+
+# Make a variable describing the size of each of our length categories
+LenInterval <- 20
+
+# so as we did in the previous lesson (Part 2)
+# In this case, the upper bound of the largest length category
+# would be 360. We could use this, or a larger, nice round number
+# like 400 - nicer for plotting
+(MaxLen <- 400)
+
+# What are our length categories?
+(LenCats <- seq(from=0, to=MaxLen, by=LenInterval))
+
+# how many of them are there?
+(nLenCats <- length(LenCats))
+
+# Let's create our plots
+par(mfrow=c(2,2))
+for (area in 1:2) {
+  for (sex in 1:2) {
+    
+    SubDat <- LenAgeDat[LenAgeDat$Area==area & LenAgeDat$SexNumVec==sex,] # subet data
+    
+    GraphTitle <- paste(AreaLabel[area],"-",SexLabel[sex]) # create graph label
+    
+    HistData=hist(SubDat$ObsLen, breaks=LenCats, right=FALSE, col=Colour[sex], 
+                  main=GraphTitle, cex.main = 0.8, xlab="Length class, mm", 
+                  ylab="Frequency",las=1,xlim=c(0,400)) # plot it
+  }
+}
+
+# we had to make a few changes, but not that much. Changes were:
+# refer to SubDat$ObsLen rather than SubDat$ObsAge, because we are interested in lengths, not ages,
+# change breaks=AgeClasses to breaks=LenCats
+# change the x axis range from xlim=c(0,10) to xlim=c(0,400))
+# and I think that was it!
+
+# We're on a roll. How about some scatter plots, to show the length at age data, for each sex in each area
+# It'll be the same sort of deal, but changing the plot type
+par(mfrow=c(2,2))
+for (area in 1:2) {
+  for (sex in 1:2) {
+    
+    SubDat <- LenAgeDat[LenAgeDat$Area==area & LenAgeDat$SexNumVec==sex,] # subset data
+    
+    GraphTitle <- paste(AreaLabel[area],"-",SexLabel[sex]) # create graph label
+    
+    plot(SubDat$ObsAge,SubDat$ObsLen, frame.plot=F, pch=16, cex=0.8, col=Colour[sex], 
+         main=c(AreaLabel[area],SexLabel[sex]), cex.main = 0.8, xlab="Age class, y", ylab="Length, mm",las=1,
+         xlim=c(0,10), ylim=c(0,400))
+
+  }
+}
+
+# When bringing in new data- good idea to:
+# NewDat- do a summary of variables to be used eg. summary(NewDat$Age) or summary(NewDat$sex)
+# to get rid of specific missing values in a dataset eg. missing age, NewDat <- subset(NewDat,!isdot(NA)). This subsets on
+# one particular variable rather than removing any/all NA in the dataset
+
+# Done! plots for almost half a paper! Next session - how to fit a growth curve to some length-at-age data,
+# and more on aspects of coding including how to write your own functions!
+
+#-----------------------------------------------------------------------------------
+# Have a go yourself, maybe at home with a glass (or two), cheese and crackers!
+#-----------------------------------------------------------------------------------
+
+# Before you start!!!
+
+# Remember, you're just starting to use R, so if you get stuck, it doesn't 
+# matter, in fact it's likely to happen. WHAT NOT TO DO! is sit there for ages 
+# getting frustrated - this is of no benefit. WHAT TO DO! is have a bit of a go, 
+# and if/when you strike trouble, and you'd still like to ensure the task gets done 
+# so you can understand how to do it, ask someone you know who uses R regularly 
+# if they have time to give some help (maybe one of your colleages). Ask that they 
+# don't just fix it, but that they explain what changes they made and why!
+
+# 1. Get hold of an excel worksheet (.csv file) with some length and age data. If you don't have one,
+# ask a friend!
+
+# 2. Select a species (if there's more than one), select an area (if there's more than one),
+# and select a sex and make a scatter plot. Make a list of any problems you encounter so we
+# can discuss in the next workshop!
+
+# 3. Plot the age frequency, for the specified species, sex area. If the ages are in decimals, 
+# you'll need to round down the column of numbers to integer ages. Here's a couple of functions 
+# to help you do it. 
+DecNumbers <- c(3.456, 7.820)
+trunc(DecNumbers,digits=0)
+floor(DecNumbers)
+?trunc
+# More hints, remember, if you are working with data frames, you can 
+# make a calcuation, and add the result as a new column to the data frame.
+# Say your data frame is called MyDataFrame, and your column of decimal ages 
+# was called MyDataFrame$DecAges then you could say something like
+# MyDataFrame$IntAges <- trunc(MyDataFrame$DecAges,digits=0)
+
+# 4. Plot the age frequency for both sexes of the specified species, in the 
+# specified area, and add both plots to the same page. Try and use a loop to
+# do it!
+
+
+## clear workspace
+rm(list=ls())
+getwd()
+## set working directory
+# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+# setwd("C:/Ainslie2018/SADA/Training/Rcourse/Sessions from Ainslie")
+
+## set options
+options(stringsAsFactors=FALSE)
+
+## load required libraries
+library(dplyr)
+
+##=====================================================================================
+## SECTION 1: Read in data
+##=====================================================================================
+## In order to do some data management, we need to have some actual data that we can 
+## manage, so lets import some data to use.
+## First, have a look at what's in the current working directory using dir() or 
+## list.files() (note that these functions are identical)
+dir()
+list.files()
+
+## Read in csv data file of some "made-up" fisheries catch and effort data
+dat=read.csv("fisheries catch and effort data.csv")
+
+## This data set is completely made up for the purposes of this activity. But it is 
+## meant to be a very simple example of a fisheries catch and effort data set with each 
+## row representing a unique fishing event by a vessel in a given year and month.
+
+## Let's look at the data
+head(dat,3)
+#   year month monthnum vessel numcrew days catch
+# 1 2014   Jan        1   A001       3   12    27
+# 2 2014   Jan        1              3   27    NA
+# 3 2014   Feb        2   A001      NA   27    82
+
+## Another handy function - tells you number of rows and number of columns
+dim(dat)
+# [1] 15  7
+
+## As this data set is rather small (15 observations!), lets look at the whole data set.
+dat
+
+## Note that I have purposefully made some errors in the data set to make it a little 
+## more real, and so that we can see how to deal with some of these errors.
+
+## Some useful functions when first looking at your data
+
+## str - compact way of showing the structure of an R object
+str(dat)
+# 'data.frame':	15 obs. of  7 variables:
+# $ year    : int  2014 2014 2014 2014 2014 2014 2015 2015 2015 2015 ...
+# $ month   : chr  "Jan" "Jan" "Feb" "Feb" ...
+# $ monthnum: int  1 1 2 2 3 3 1 1 2 3 ...
+# $ vessel  : chr  "A001" "" "A001" "B020" ...
+# $ numcrew : int  3 3 NA 3 5 3 4 5 3 4 ...
+# $ days    : int  12 27 27 29 6 22 25 19 16 18 ...
+# $ catch   : int  27 NA 82 261 13 131 197 459 574 144 ....
+
+## summary - I'm sure Alex has used this before - another way of looking at summary of 
+## each variable
+summary(dat)
+
+## It is worth mentioning how missing values are imported into R. 
+head(dat)
+## If you look at the data set in Excel, you will notice that there are missing values 
+## in the vessel, numcrew and catch columns
+
+unique(dat$vessel)
+## Vessel: As the rest of the column are strings, R imports the missing value as a 
+## string containing nothing i.e. "". So in reality it thinks there are 3 vessels, 
+## "A001", "B020" and "". In reality, we know that if this was a real data set then 
+## there had to be an associated vessel name. So we would go back and check the data 
+## sheet/scanned return to find out the name. If we couldn't find the name then we might 
+## assign the name "missing" or decide to remove the record from our imported data set 
+## for the purposes of analysis. For our purposes here, lets say we checked the record 
+## and found out that it belonged to vessel "B020" and so we correct the record here. 
+## (And in an ideal world, we'd report it back to the data team so hopefully they could 
+## change it in the database if possible.)
+dat$vessel[dat$year==2014 & dat$month=="Jan" & dat$days==27]
+dat$vessel[dat$year==2014 & dat$month=="Jan" & dat$days==27]="B020"
+unique(dat$vessel)
+head(dat)
+
+unique(dat$numcrew)
+unique(dat$catch)
+## Number of Crew/Catch: As the rest of the columns of each are numeric, R imports the 
+## missing  values as an actual missing value and therefore the missing values appear as
+## NA's. Once again, we should check the logsheets to see if we can correct the missing 
+## values. Sometimes, values are just missing so if we can't correct them then they must
+## stay as NA's. Sometimes variables are simply omitted from the return so the numcrew 
+## value might not be able to be corrected. In most cases it is unlikely that a catch 
+## value would be missing, maybe its a zero not properly recorded? Whatever the actual 
+## error is, for the time being lets leave both these missing values as NA's so that we 
+## can see how functions deal with them.
+
+dat
+
+##=====================================================================================
+## SECTION 2: Data manipulation within a single dataframe i.e. data set
+##=====================================================================================
+## Let's look at ways of data management within a single table. As noted above this 
+## includes:
+## (1) Adding new variables that are usually functions of existing variables
+## For example, calculating catch rate = catch/effort
+## (2) Selecting/removing one or more columns/variables
+## For example, removing additional variables not required for analysis in order to 
+## make visualisation easier.
+## (3) Selecting/removing rows/observations
+## For example, subsetting observations for a particular spatial region or temporal 
+## range.
+## (4) Changing the ordering of the observations/rows
+## Often required if the database and extraction has produced observations in an 
+## alternative sequence to that required.
+
+##=============================================================
+## (1) Adding new variables
+##=============================================================
+## Using base packages, we have essentially already done this in previous sessions by 
+## defining the  new variable name, using the <- (or =) operator and the function 
+## involving one or more current variables.
+
+## create a catch rate variable that use the catch and days variable
+dat$cpue1 = dat$catch/dat$days
+head(dat)
+
+## Using the "dplyr" package we use the "mutate" function
+dat = mutate(dat, cpue2 = catch/days)
+head(dat)
+
+## These 2 operations produce the same result
+head(dat)
+
+##=============================================================
+## (2) Selecting or removing one or more columns i.e. variables
+##=============================================================
+## Using base packages, we have essentially already done this in previous sessions using
+## the  subset command or by directly defining the required columns to keep/remove via 
+## square brackets.
+
+## Some ways to SELECT a column
+## to select one or more columns
+subdat1 = dat[, c("year", "month", "cpue1")]
+head(subdat1)
+## or alternatively use column numbers
+subdat1 = dat[, c(1,2,6)]
+head(subdat1)
+## Perhaps another way you may have seen this done. Typically we would reserve this way 
+## of setting up a data.frame to creating new dataframes from separate vectors.
+subdat1 = data.frame(year=dat$year, month=dat$month, cpue1=dat$cpue1)
+head(subdat1)
+## or alternatively using the "subset" function and the column names
+subdat1 = subset(dat, select=c(year, month, cpue1))
+head(subdat1)
+
+## Some ways to REMOVE one or more columns
+## First let's save our data set to a new name so we don't delete all our data
+## i.e. let's just make a copy of our data
+newdat=dat
+head(newdat)
+
+## To remove a single column, we can simply set the column equal to NULL
+## so, lets remove the numcrew column 
+newdat$numcrew=NULL
+head(newdat)
+## Or alternatively we can use square brackets and -ve sign to remove columns
+## lets try removing "days" variable which is in column number 5
+newdat = newdat[, -5]
+head(newdat)
+## And we wanted to remove multiple columns rather than writing -5 we could write -c(4,5)
+
+## Alternatively, we can use subset function to remove columns using the actual column 
+## name and  a negative sign:
+newdat = subset(newdat, select=-monthnum)
+head(newdat)
+
+## So, we can use the column name or number to identify a column to select or remove.
+
+## Another useful function - the "grep" function
+
+## There are also some other functions that can be helpful to find column names and 
+## numbers. For example, if we don't know the full name of the column we can use grep() 
+## which is a pattern matching function.
+grep("vessel", names(dat))
+# [1] 4 
+## This means it must be column 4
+## We don't even need to know the full pattern that we are looking for, For example, we 
+## can search for "vess" rather than the full word "vessel"
+grep("vess", names(dat))
+# [1] 4
+## still column 4
+## This function can be useful if looking for multiple columns. For example, let's 
+## look for all columns with the word "cpue" in their name.
+grep("cpue", names(dat))
+# [1] 8 9
+## so columns 8 and 9 have cpue in their names
+
+head(newdat)
+## So if we were wanting to keep only those columns with "cpue" in the name
+newdat2 = dat[, grep("cpue", names(dat))]
+head(newdat2)
+
+## And if we were wanting to remove all columns with "cpue" in the name
+newdat3 = dat[, -grep("cpue", names(dat))]
+head(newdat3)
+
+## Selecting or removing columns via "dplyr"
+## Using the "dplyr" package we can use the "select" function to select or remove a 
+## column
+subdat2 = select(dat, c(year, month, cpue1))
+head(subdat2, 3)
+## you can also just use comma separators rather than placing all column names in a 
+## vector
+subdat2 = select(dat, year, month, cpue1)
+head(subdat2, 3)
+## you can also use the select command to remove columns/variables
+subdat2 = select(dat, -c(year, month, cpue1))
+head(subdat2, 3)
+
+##=============================================================
+## (3) Selecting or removing one or more rows i.e. observations
+##=============================================================
+## Using the base packages, we have essentially already done this in previous sessions 
+## using the  subset command or by directly defining the required rows to keep/remove 
+## via square brackets
+
+## To select observations (i.e. rows) based on a value of one variable
+subdat3 = dat[which(dat$month=="Feb"), ]
+subdat3
+## Or alternatively
+subdat3 = dat[dat$month=="Feb", ]
+subdat3
+
+## To select observations based on multiple values of one variable
+subdat3 = dat[which(dat$month=="Feb"|dat$month=="Mar"), ]
+subdat3
+## Or alternatively, we can use the operator %in% in place of multiple OR statements
+subdat3 = dat[which(dat$month%in%c("Feb","Mar")), ]
+subdat3
+
+## To select observations based on values of more than one variable
+subdat3 = dat[dat$month%in%c("Feb","Mar") & dat$vessel=="A001", ]
+subdat3
+
+## Now, we can also select rows using the "subset" command
+subdat4 = subset(dat, month%in%c("Feb","Mar"))
+subdat4
+## And again using values of more than one variable
+subdat4 = subset(dat, month%in%c("Feb","Mar") & vessel=="A001")
+subdat4
+
+## Selecting or removing rows via "dplyr"
+## Now we can also choose rows via the dplyr package by using the "filter" function ('select' was the function 
+## for choosing columns)
+subdat5 = filter(dat, month=="Feb")
+subdat5
+## and choosing multiple values of the same variable
+subdat5 = filter(dat, month%in%c("Feb","Mar"))
+subdat5
+## and choosing rows based on more than one variable with an ampersand
+subdat5 = filter(dat, month%in%c("Feb","Mar") & vessel=="A001")
+subdat5
+## and again based on more than one variable but this time using commas to separate 
+subdat5 = filter(dat, month%in%c("Feb","Mar"), vessel=="A001")
+subdat5
+
+##=============================================================
+## !!!!!!! Selecting both columns and rows !!!!!!! 
+##=============================================================
+## So, what if we want to choose to keep rows based on values of a variable and at the 
+## same time choose to only retain some of the columns i.e. variables.
+## For example, we only want data from Feb and March, and only retain the columns year, 
+## month, vessel and catch
+head(dat,3)
+## Lets get rid of that extra cpue2 column
+dat$cpue2=NULL
+## and lets rename the "cpue1" column to just "cpue"
+names(dat)[which(names(dat)=="cpue1")]="cpue"
+
+## Using the "subset" command in the base package (data frame, rows required, columns required)
+subset6 = subset(dat, month%in%c("Feb","Mar"), select=c(year, month, vessel, catch))
+subset6
+
+## Now to do this using dplyr functions we need to use the select function to choose 
+## columns and the filter function to choose rows. We could try this...
+subset.rows=filter(dat, month%in%c("Feb","Mar"))
+subset.rows.and.columns=select(subset.rows, c(year, month,  vessel, catch)) 
+subset.rows.and.columns 
+## But thats a bit messy. So now we should learn about another operation calling PIPING.
+## PIPING  uses the pipe operator which looks like this   %>%
+## The dplyr package imports this operator from another package (magrittr). 
+## This operator allows you to pipe the output from one function to the input of another
+## function. Instead of nesting functions (reading from the inside to the outside), the
+## idea of of piping is to read the functions from left to right. So we can rewrite the 
+## above code to combine the filter and select operations.
+
+subset7 = dat %>%
+  filter(month%in%c("Feb","Mar")) %>%
+  select(c(year, month,  vessel, catch))
+subset7
+
+## Now compare output from "dplyr" functions i.e. subset7 with that from subset function in "base"
+## package i.e subset6
+subset6 ## base
+subset7 ## dplyr
+
+## These look almost identical. In fact the only difference are the row numbers
+## "base" keeps the original rownames whilst "dplyr" has reset these to start again at 
+## 1. In this instance, the base command subset looks more efficient however, the dplyr 
+## functions, including the piping operator, start to show their efficiency as we move 
+## into summary functions later. 
+
+##=============================================================
+## (4) Change the ordering of the observations/rows
+##=============================================================
+## In the base packages we can use the function "order" which produces a vector of 
+## indices
+head(dat)
+## To start off with, lets try the "sort" function to sort the entries of the days 
+## column.
+sort(dat$days)
+# [1]  6  8 12 15 16 16 18 19 19 22 25 27 27 29 
+## So this look like its sorted the values in ascending order! Great!
+## But what if want to sort not just the days column but the entire data.frame (all 
+## columns) based on the value of the "days" variable. To do this, we use the "order" 
+## function, which produces a vector of indices as mentioned above.
+
+## So for example to sort by the number of days (days) we first need to find a vector of
+## indices that sorts the column of days.
+order(dat$days) 
+# [1]  5 15  1 12  9 13 10  8 11  6  7  2  3  4 14
+## So this is the order of all the entries in the "days" column in ascending order (positions of the values, rather than values themselves)
+## Now we can use these indices to reorder the vector of days using our square brackets
+## as we have used so many time before.
+dat$days[order(dat$days)]
+# [1]  6  8 12 15 16 16 18 19 19 22 25 27 27 29 29
+## which we can see is just like the output of the sort function
+sort(dat$days)
+# [1]  6  8 12 15 16 16 18 19 19 22 25 27 27 29 29
+## so now we can use the vector of indices to sort the entire data frame
+dat[order(dat$days), ]
+
+## So, to sort/order by days
+dat = dat[order(dat$days), ]
+dat
+## Notice how the row numbers look all mixed up now!
+
+## Now, to sort/order by monthnum
+dat = dat[order(dat$monthnum), ]
+dat
+
+## And, to sort/order by catch
+dat = dat[order(dat$catch), ]
+dat
+
+## How about ordering by a character vector?
+dat$month
+order(dat$month)
+dat$month[order(dat$month)]
+## Uh, oh it sorts alphabetically!
+## If you want to sort by character vectors, you will need to convert them to a factor 
+## and specify the order of the levels.
+unique(dat$month)
+dat$month=factor(dat$month, levels=c("Jan", "Feb", "Mar")) 
+
+## use levels=month.abb to get all 12 months
+
+## And now lets try that again!
+order(dat$month)
+dat$month[order(dat$month)]
+
+dat[order(dat$month), ]
+
+## So, to sort by month
+dat = dat[order(dat$month), ]
+dat 
+
+## But another comment regarding factor variables. Sometimes we may wish to convert a
+## variable to a factor to make use of the factor properties. However, sometimes there 
+## are side effects to having a variable as a factor type. My preference is to retain
+## the original variable as a string and to create a new variable as a clone of the
+## original but as type factor. But lets just leave month as a factor for now.
+
+## We can choose to sort by multiple variables too.
+## So lets' say we wanted to sort by year then month
+dat = dat[order(dat$year, dat$month), ]
+dat
+## Or now, sort by year then month then vessel
+dat = dat[order(dat$year, dat$month, dat$vessel), ]
+dat
+
+## The "order" function, by default, sorts by ascending order. This means that numeric 
+## variables will be sorted from lowest to highest, character variables will be sorted 
+## in alphabetic order, and factors will be sorted by order of their levels. You can 
+## also choose to sort by descending order, by using the argument decreasing=TRUE.
+
+dat = dat[order(dat$year, decreasing=TRUE), ]
+dat
+
+## Also note that be default NA's are placed last in order i.e. na.last=TRUE whether 
+## using increasing or decreasing order.
+dat$catch[order(dat$catch)]
+# [1]   13   27   63   82  144  179  197  319  439  642  870 1520 1523 1918   NA
+dat$catch[order(dat$catch, decreasing=TRUE)]
+# [1] 1918 1523 1520  870  642  439  319  197  179  144   82   63   27   13   NA
+## Either ascending or descending order places the NA last
+
+## You can change this to place NAs first by using the argument na.last=FALSE 
+## or alternatively not include them by using na.last=NA, but this means the vector
+## will be shorter (by 1!)
+dat$catch[order(dat$catch, na.last=TRUE)]
+# [1]  13  27  63  82  95 131 144 179 194 197 261 456 459 574  NA
+dat$catch[order(dat$catch, na.last=FALSE)]
+# [1]  NA  13  27  63  82  95 131 144 179 194 197 261 456 459 574
+dat$catch[order(dat$catch, na.last=NA)]
+# [1]  13  27  63  82  95 131 144 179 194 197 261 456 459 574
+
+## In the "dplyr" package, sorting is done by the function "arrange"
+dat = arrange(dat, year)
+dat
+## And as for the "order" function you can "arrange" using multiple variables
+dat = arrange(dat, year, month)
+dat
+## and even more variables
+
+dat = arrange(dat, vessel, year, month)
+dat
+
+##=====================================================================================
+## SECTION 3: Creating summary statistics of variables within a given table
+##=====================================================================================
+## There are many times that we are interested in creating summary statistics from a 
+## given data set. And typically, this set of summary statistics may be required for a 
+## given grouping of variables. For example, we may want to count the number of fishing 
+## trips in a year, or the sum of the catch by method of fishing within each year. Or we
+## may want to calculate the mean catch rate for each year, or even for each vessel 
+## within each year. For this purpose, there are a number of functions that we can use 
+## to produce summary tables for our data.
+
+##=============================================================
+## The "table" function
+##=============================================================
+head(dat,2)
+## The "table" function counts the number of data (rows in our data frame) for the given
+## variable (column name).
+
+## Let's count the number of records per year
+table(dat$year)
+## And how about the number of records per month
+table(dat$month)
+## And now the number of records per vessel
+table(dat$vessel)
+
+## We can do this for multiple variables at a time
+## Let's count the number of records by year and month
+table(dat$year, dat$month)
+## or we can flip the year and month variables
+table(dat$month, dat$year)
+
+## What about three variables?
+table(dat$year, dat$month, dat$vessel)
+## Oh dear, its starting to look a little messy!
+## And remember that the order of variables makes a difference to the output
+table(dat$year, dat$vessel, dat$month)
+
+## My suggestion is that the "table" function is great for one or even two variables but
+## may be a little confusing for 3 or more variables.
+
+## It is worth noting that the table function can treat NA's i.e. missing values in 
+## different ways. By default it actually excludes them!
+## Lets look at the numcrew variable...
+dat$numcrew
+# [1]  3  3 NA  3  5  3  4  5  3  4  3  3  5  5  4
+table(dat$numcrew)
+# 3 4 5 
+# 7 3 4 
+## The top line is the values of the numcrew variables and the second line is the number
+## of data at each of the levels. But if we add up the bottom line 7 + 3 + 4 = 14, and 
+## remembering that the data has 15 rows, what happened to the other row!!! Well, it was
+## an NA and the table function ignored it!
+
+## We can change how NA's are handled in the table function using the argument "useNA".
+## There are 3 values "no", "ifany", "always"
+table(dat$numcrew, useNA="no")
+# 3 4 5 
+# 7 3 4 
+table(dat$numcrew, useNA="ifany")
+# 3    4    5 <NA> 
+# 7    3    4    1 1
+table(dat$numcrew, useNA="always")
+# 3    4    5 <NA> 
+# 7    3    4    1 
+## My suggestion is to always check using this last form (useNA="always") before using the table
+## in future summaries.
+
+## So to count the number of records by year and numcrew
+table(dat$vessel, dat$numcrew, useNA="always")
+#      3 4 5 <NA>
+# A001 2 2 2    1
+# B020 5 1 2    0
+# <NA> 0 0 0    0
+## There's that NA again!!
+
+## Note, You can also plot table objects i.e. the output from the table command using 
+## the generic "plot" function. A 1-dimensional table (i.e. 1 variable) will plot as 
+## type "h" which are skinny histogram-like vertical lines. You may remember this from 
+## a previous session where Alex used the table function to count the number of samples 
+## for an age-frequency plot ("Intro to R part 2.R").
+table1 = table(dat$month)
+plot(table1)
+
+## 2-dimensional tables (i.e. 2 or more variables) plot as mosaic plots
+table2 = table(dat$year, dat$month)
+plot(table2, col=2:4)
+
+table3 = table(dat$year, dat$month, dat$vessel)
+plot(table3, col=2:3)
+
+## So the "table" function is great if you want to know how many data observations for a
+## variable. I find this function is useful for quick onscreen data counts that can help
+## you get to know your data quickly but generally I don't find this function useful for
+## formal data summaries.
+
+##=====================================================================================
+## Now lets look at some other summary functions. In this section we will focus of the 
+## following functions available in the base packages: tapply and aggregate, and the 
+## dplyr functions summarise and group_by.
+##=====================================================================================
+## Base functions - tapply and aggregate
+## These functions can calculate the sum, or the average, or various other mathematical 
+## quantities of a given variable for various levels of another variable or variables.
+## Basically you need to tell tapply or aggregate 3 things
+## (1) Our variable of interest - i.e. What variable are we working with (and want to 
+## add up or average)? e.g. catch
+## (2) Our grouping variable (or variables) i.e. Over what other variables do you want 
+## to do this? e.g. by year, or by year and month
+## (3) The mathematical function - i.e. do we want to sum or average or count or ??? 
+
+##=============================================================
+## The "tapply" function
+##=============================================================
+
+## When our data is in a dataframe, this function is very easy to use.
+## Basically "tapply" (and "aggregate" below) are like the pivot table functions in 
+## Excel. We just have to tell the function which column/s of the dataframe to use for 
+## steps (1) and (2), and what function to use in step (3).
+## So, to sum up the catch for each year in our data set, we have:
+## (1) Our variable of interest is catch so the column is dat$catch
+## (2) Our grouping variable is year so the column is dat$year
+## (3) the function is sum, which is a built-in function in R.
+## Remember the order in this function is :
+## (1) VARIABLE, (2) GROUPING VARIABLE, (3) FUNCTION
+
+## Lets start with our data but first lets get rid of that catch=NA while we get to know
+## this function.
+newdat=subset(dat, !is.na(catch))
+newdat
+## Note that row 2 has been removed. If we want, we can rename the rownames in sequence 
+## 1,2,3... by essentially removing the rownames, thereby forcing them back to the 
+## default sequence.
+rownames(newdat)=NULL
+newdat
+
+## Now lets try our tapply function to sum up the catch in each year
+tapply(X=newdat$catch, INDEX=newdat$year, FUN=sum) #X= because youre not adding in a data frame but a column within the
+# data frame
+# 2014 2015 2016 
+# 1431 5302 1203
+## The top row is the years and the bottom row is the sum of the catch for each of those
+## years. And as long as you input the arguments in the correct order, you dont need to
+## write the names for these arguments.
+tapply(newdat$catch, newdat$year, sum)
+
+## To convince ourself that the function has worked lets try subsetting by each year and
+## summing up the catch ourselves:
+dat2014=subset(newdat, year==2014)
+dat2014
+#   year month monthnum vessel numcrew days catch     cpue
+# 1 2014   Jan        1   A001       3   12    27 2.250000
+# 2 2014   Feb        2   A001      NA   27    82 3.037037
+# 3 2014   Feb        2   B020       3   29   261 9.000000
+# 4 2014   Mar        3   A001       5    6    13 2.166667
+# 5 2014   Mar        3   B020       3   22   131 5.954545
+## now sum the catch variable
+catch2014=sum(dat2014$catch)
+catch2014
+# [1] 1431
+## Does this match our tapply table above... YES!!
+dat2015=subset(newdat, year==2015)
+dat2015
+## now sum the catch variable
+catch2015=sum(dat2015$catch)
+catch2015
+## Does this match our tapply table above... YES!!
+## ... I'll leave it up to you to do the same for 2016!
+
+## Now we can extend the "tapply" function to group by multiple variables
+## But please note that the grouping variable or variables must be written as a list.
+## This means we write list(dat$year, ...)
+tapply(newdat$catch, list(newdat$year, newdat$month), sum)
+#      Jan Feb Mar
+# 2014  27  952  452
+# 2015 1720 1918 1664
+# 2016 705  179  319
+
+## and now grouping by 3 variables
+tapply(newdat$catch, list(newdat$year, newdat$month, newdat$vessel), sum)
+## Oh dear, same as for table function - starts looking messy.
+
+## Now that we know how to use our tapply function, lets go back to our original data 
+## set with the NA for catch in row 2.
+dat
+
+## And lets try our "tapply" function again
+## by year
+tapply(dat$catch, list(dat$year), sum)
+# 2014 2015 2016 
+#   NA 5302 1203  
+## by year and month
+tapply(dat$catch, list(dat$year, dat$month), sum)
+#      Jan Feb Mar
+# 2014  NA 952  452
+# 2015 1720 1918 1664
+# 2016 2705  179  319
+## Oh dear, we have NA's in our tapply output. If we look closely, we notice that the 
+## NAs occur for the associated levels of the grouping variable. i.e. catch=NA occurs 
+## in line 2 which is year 2014, month Jan, vessel B020. So wherever these values occur 
+## in the tapply table, we see a NA result. This makes sense if we try using the actual 
+## "sum" function itself on a vector with NAs.
+sum(c(1,3,6,NA))
+## The result is NA!
+## So, how do we deal with this in either the "sum" function or the "tapply" function? 
+## Well, its quite easy actually as we can enter the additional argument na.rm=TRUE to 
+## either the sum function or to the tapply command that will be utilised in the 
+## function FUN to be used. (remove from calculation, not from data frame)
+
+## apply to sum function
+sum(c(1,3,6,NA), na.rm=TRUE)
+
+## And now lets use this na.rm=TRUE back to our tapply function
+tapply(dat$catch, list(dat$year, dat$month), sum, na.rm=TRUE)
+#      Jan Feb Mar
+# 2014  27  952  452
+# 2015 1720 1918 1664
+# 2016 705  179  319
+
+## Sometimes the tapply command starts looking a little verbose with the data.frame 
+## name repeated. We can abbreviate this using the "with" function...
+with(dat, tapply(catch, list(year, month), sum, na.rm=TRUE))
+#      Jan Feb Mar
+# 2014   27  952  452
+# 2015 1720 1918 1664
+# 2016 705  179  319
+## same output as before
+
+## This abbreviation via the "with" function can be quite useful when you wish to subset
+## the main data set.
+with(subset(dat, year>2014), tapply(catch, list(year, month), sum, na.rm=TRUE))
+#      Jan Feb Mar
+# 2015 1720 1918 1664
+# 2016 705  179  319
+
+## You can use any function within the tapply function that takes one input and returns 
+## a single output. For example, "sum" takes a single vector of numbers and returns a 
+## single number. There are many other built in functions in R which also satisfy this 
+## criteria including mean, min, max, length, sd and so on. So we could calculate the 
+## mean catch per fishing record by year - (not sure why we'd want this!).
+tapply(dat$catch, list(dat$year), mean, na.rm=TRUE)
+with(dat, tapply(catch, list(year, month), mean, na.rm=TRUE))
+
+## How about the mean cpue per fishing record by year
+tapply(dat$cpue, list(dat$year), mean, na.rm=TRUE)
+with(dat, tapply(cpue, list(year, month), mean, na.rm=TRUE))
+
+## How about the standard deviation of the cpue values
+tapply(dat$cpue, list(dat$year), sd, na.rm=TRUE)
+with(dat, tapply(cpue, list(year, month), sd, na.rm=TRUE))
+
+## How about the number of records i.e. function is "length" (length function= 'count' function in excel)
+tapply(dat$cpue, list(dat$year), length, na.rm=TRUE)
+## Oops, the length function doesnt accept this na.rm=TRUE argument. 
+tapply(dat$cpue, list(dat$year), length)
+## But without removing NAs, it counts the extra row as a data point??
+## So how would we calculate the number of records per year, but omitting row 2 
+## i.e. the catch=NA?? There are a number of ways:
+## (1) you could subset the data: 
+with(subset(dat, !is.na(cpue)), tapply(cpue, list(year, month), length))
+## (2) you could write your revised "length" function to count non-NA observations
+CalcLengthRevised=function(x){
+  result=length(x[!is.na(x)])
+  return(result)
+}
+tapply(dat$cpue, list(dat$year), CalcLengthRevised)
+
+## Now, just so we dont have to worry about the NA's for a while, lets use our revised 
+## data set with the catch=NA observation removed.
+newdat
+
+## There are many times that you might want to write your own function to use in the 
+## tapply function (or later in the aggregate function).
+## Example: To calculate a confidence interval you need the standard error which is not 
+## available as a built-in function but can be calculated as sd/sqrt(n)
+CalcStdError=function(x){
+  stderror=sd(x)/sqrt(length(x))
+  return(stderror)
+}
+## Note that when a function only has one calculation you can simply write that one
+## calculation and then you dont have to "return" anything as it is automatically 
+## assumed as the output. So the function can be shortened to:
+CalcStdError=function(x){
+  sd(x)/sqrt(length(x))
+}
+## And since there is only one line in the function you can also omit the curly 
+## brackets and then simply write the function on one line.
+CalcStdError=function(x) sd(x)/sqrt(length(x))
+
+## now to use our formula
+tapply(newdat$cpue, list(newdat$year), CalcStdError)
+## or similarly, using the "tapply" with the "with" function
+with(newdat, tapply(cpue, list(year), CalcStdError))
+
+## Now, lets have a look at the output of tapply
+table1=tapply(newdat$catch, list(newdat$year), sum)
+table1
+## If we look at the structure of the output object, its a bit confusing.
+str(table1)
+## Lets look at a tapply output with 2 grouping variables
+table2=tapply(newdat$catch, list(newdat$year, newdat$month), sum)
+table2
+## The structure is still a bit confusing.
+str(table2)
+## and so on for 3 grouping variables
+table3=tapply(newdat$catch, list(newdat$year, newdat$month, newdat$vessel), sum)
+table3
+
+## This type of object is called an array, with the levels of the grouping 
+## variables (i.e. year, month, vessel...) dimension names.
+
+## If outputting to a csv file, these dimension names will be stored as part of
+## the file
+write.csv(table1, "table1.csv")
+write.csv(table2, "table2.csv")
+write.csv(table3, "table3.csv")
+## Lets have a look at those files in Excel...
+## I think these two-way tables save quite nicely!
+
+## If trying to use these tables for future analysis in R, I find that a 1-D array
+## might be okay as its simply like a vector of numbers. But a 2-D or 3-D array 
+## requires some thought to be used appropriately. There are times when arrays can 
+## be a very efficient way of dealing with large data sets, and there are some 
+## mathematical niceties to arrays. But I find for many people that they can be a
+## little challenging in the beginning. For many of our analyses there are some other
+## object types that are a little easier to work with.
+
+## However, there is one task which lends itself well to tapply tables, and that is
+## when working with grid structures. For example, you may wish to plot catch summaries
+## by spatial block where the block is on a grid like our CAES 60x60 blocks or the
+## more recent and finer 10x10 blocks. Since we dont have these variables in our 
+## current data set, I'll show the same task using year and month.
+
+table4=tapply(newdat$catch, list(newdat$year, newdat$month), sum)
+table4
+
+## now to plot
+image(x=1:nrow(table4), y=1:ncol(table4), table4, zlim=c(0, 700), col=rev(heat.colors(10)),
+      axes=FALSE, xlab="", ylab="")
+axis(1, at=1:nrow(table4), lab=rownames(table4))
+axis(2, at=1:ncol(table4), lab=colnames(table4), las=2)
+box()
+
+## This might seem a little silly with this data but it comes in very handy when
+## plotting spatial data! We will most likely come across this again in later sessions.
+
+## Note: Of course it would be nice to have a colour scale on this plot which 
+## unfortunately is not available in the base package. There is however another 
+## package called "fields" which has a revised image plotting function called 
+## "image.plot". This function has a colour scale available.
+## You can try the code below after installing the package "fields".
+library(fields)
+image.plot(x=1:nrow(table4), y=1:ncol(table4), table4, zlim=c(0, 700), 
+           col=rev(heat.colors(10)), axes=FALSE, xlab="", ylab="")
+axis(1, at=1:nrow(table4), lab=rownames(table4))
+axis(2, at=1:ncol(table4), lab=colnames(table4), las=2)
+box()
+
+## Note: Just need to reset margins after using "image.plot" function.
+par(mar=c(5,4,4,2))
+
+##=============================================================
+## The "aggregate" function
+##=============================================================
+## The "aggregate" function essentially performs the same function as the "tapply" 
+## function but returns the result in a different format which is often a lot easier 
+## to work with in our analyses. The output of the aggregate function is another
+## data.frame and we're very used to working with them by now.
+## As for the tapply function, the aggregate function requires us to define (1) the 
+## variable of interest (2) the grouping variable/s and (3) the function to apply to 
+## the variable of interest for each combination of the grouping variables.
+
+## Remember our tapply function to calculate the sum of catch for each year
+tapply(X=newdat$catch, INDEX=list(newdat$year), FUN=sum)
+## and more simply without the argument names (remembering the correct order)
+tapply(newdat$catch, list(newdat$year), sum)
+# 2014 2015 2016 
+#  1431 5302 1203
+## Now we can do the same in aggregate, with arguments in the same order but with 
+## different names.
+aggregate(x=newdat$catch, by=list(newdat$year), FUN=sum)
+## or more simply without the argument names (remembering the correct order)
+aggregate(newdat$catch, list(newdat$year), sum)
+#   Group.1    x
+# 1    2014  1431
+# 2    2015  5302
+# 3    2016  1203
+## We can compare the output of the tapply and aggregate functions. They seem to have
+## the same values but in a slightly different format. In addition, the names used for
+## the columns in the output of aggregate seems less meaningless. We can change
+## the output names that aggregate uses.
+aggregate(data.frame(catch=newdat$catch), list(year=newdat$year), sum)
+## Now those names looks better!
+
+## However, there is a alternative way of using the aggregate function called the 
+## "formula" method which creates meaningful column names from the actual input data.
+aggregate(formula=catch~year, data=newdat, FUN=sum)
+## And as before, you don't even need argument names if they're in the correct order.
+aggregate(catch~year, newdat, sum)
+
+## As for the tapply function, you can enter any function in the aggregate function
+## to compute a summary of the variable of interest.
+
+## Calculate the mean of catch per fishing record by year
+aggregate(catch~year, newdat, mean)
+
+## Calculate the mean of cpue per fishing record by year
+aggregate(cpue~year, newdat, mean)
+
+## Calculate the standard deviation of cpue per fishing record by year
+aggregate(cpue~year, newdat, sd) 
+
+## And as for tapply, you can write your own function if needed
+CalcStdError
+aggregate(cpue~year, newdat, CalcStdError) 
+
+## The aggregate function also has the ability to calculate the summary statistic for
+## multiple variables.
+## For example, we could calculate the total catch per year as well as the total number
+## of fishing days per year by using the function cbind() to combine the multiple
+## variables of interest
+aggregate(cbind(catch, days)~year, newdat, sum)
+
+## However it must be noted that when using multiple variables, the function applied
+## to each of the variables of interest must be the same. i.e. both are summed or both
+## are averaged.
+## As for the tapply function, we can group over multiple variables
+## Lets group over year and month
+aggregate(catch~year+month, newdat, sum)
+## Or year and vessel
+aggregate(catch~year+vessel, newdat, sum)
+
+## Lets try doing some calculations that are actually meaningful!
+## Calculate the total catch per year, and the average catch rate per year
+aggregate(catch~year+vessel, newdat, sum)
+aggregate(cpue~year+vessel, newdat, mean)
+## Hmmm, it would be nice to combine these into one output.
+## Turns out that it fairly easy with another function called "merge".
+
+##=============================================================
+## The "merge" function
+##=============================================================
+## First calculate the total catch per year via aggregate.
+agg1=aggregate(catch~year+vessel, newdat, sum)
+agg1
+## Now calculate the average catch rate per year via aggregate.
+agg2=aggregate(cpue~year+vessel, newdat, mean)
+agg2
+## We can then combine these 2 data sets (agg1a and agg1b) as they have the year and
+## vessel columns in common. The resulting data.frame will have these 2 variables 
+## (year and vessel) plus any other columns in either data set.
+## The merge function requires as inputs the 2 data.frame to be merged and the columns
+## that you wish to merge by, i.e. those in common between the 2 data sets.
+aggcomb1=merge(agg1, agg2, by=c("year", "vessel"))
+aggcomb1
+
+## Lets try another example:
+## Say we would like to calculate the average catch rate per year, and in addition, 
+## calculate the confidence interval for that catch rate
+agg3=aggregate(cpue~year+vessel, newdat, mean)
+agg3
+agg4=aggregate(cpue~year+vessel, newdat, CalcStdError)
+agg4
+## As before, we would like to combine these 2 data sets (agg1a and agg1b) as they have
+## the year and vessel columns in common. However the 3rd column in each of the data 
+## sets is called "cpue". This will be a problem for the merge function as where the 
+## column names coincide the merge function will try to merge those columns into 1. 
+## If they are completely different then it will produce 2 columns called cpue.x and 
+## cpue.y. But... lets try it anyway...
+aggcomb2=merge(agg3, agg4, by=c("year", "vessel"))
+aggcomb2
+## So, as expected we obtained cpue.x and cpue.y. There can be even bigger problems if
+## the 2 columns actually have similar values in some rows. So, a safer way to merge
+## these 2 tables is to rename at least one of the columns before merging. I'm going
+## to rename the "cpue" column in agg2b to "cpue.se" because thats more meaningful.
+agg4
+names(agg4)[which(names(agg4)=="cpue")]="cpue.se"
+## Now lets try to merge these 2 data sets again
+aggcomb2 = merge(agg3, agg4, by=c("year", "vessel"))
+aggcomb2
+## That's better!
+
+## And now we can plot the cpue by year and vessel with confidence intervals
+## First lets calculate the lower and upper confidence limits.
+aggcomb2$lowCL = aggcomb2$cpue - 1.96 * aggcomb2$cpue.se
+aggcomb2$uppCL = aggcomb2$cpue + 1.96 * aggcomb2$cpue.se
+aggcomb2
+
+## And now to plot the cpue by year with confidence intervals
+plot(aggcomb2$year, aggcomb2$cpue, "n", ylim=c(0, 40), axes=FALSE, las=1,
+     xlab="Year", ylab="CPUE")
+for (ivessel in unique(aggcomb2$vessel)){
+  subdat=subset(aggcomb2, vessel==ivessel)
+  ivesselnum=which(unique(aggcomb2$vessel)==ivessel)
+  lines(subdat$year, subdat$cpue, "o", pch=16, lty=2, col=ivesselnum+1)
+  arrows(subdat$year, subdat$lowCL, subdat$year, subdat$uppCL,
+         code=3, angle=90, length=0.02, col=ivesselnum+1)
+}
+axis(1, at=2014:2016)
+axis(2, at=seq(0, 40, 10), las=2)
+legend("topright", legend=unique(aggcomb2$vessel), pch=16, lty=2, col=2:3, 
+       bty="n", cex=0.8)
+
+## Lets calculate our cpue again but this time just by year (i.e. not vessel as well)
+agg5=aggregate(cpue~year, newdat, mean)
+agg5
+agg6=aggregate(cpue~year, newdat, CalcStdError)
+names(agg6)[which(names(agg6)=="cpue")]="cpue.se"
+agg6
+## And combine
+aggcomb3=merge(agg5, agg6, by=c("year"))
+aggcomb3
+## Calculate the lower and upper confidence limits.
+aggcomb3$lowCL = aggcomb3$cpue - 1.96 * aggcomb3$cpue.se
+aggcomb3$uppCL = aggcomb3$cpue + 1.96 * aggcomb3$cpue.se
+aggcomb3
+
+## And now to plot the cpue by year with confidence intervals
+plot(aggcomb3$year, aggcomb3$cpue, "o", pch=16, lty=2, ylim=c(0, 40), axes=FALSE, las=1,
+     xlab="Year", ylab="CPUE")
+arrows(aggcomb3$year, aggcomb3$lowCL, aggcomb3$year, aggcomb3$uppCL, code=3, angle=90, length=0.02)
+axis(1, at=2014:2016)
+axis(2, at=seq(0, 40, 10), las=2)
+## How about overlaying the catch rates by vessel (and year) we calculated previously.
+for (ivessel in unique(aggcomb3$vessel)){
+  subdat=subset(aggcomb3, vessel==ivessel)
+  ivesselnum=which(unique(aggcomb3$vessel)==ivessel)
+  lines(subdat$year, subdat$cpue, "o", pch=16, lty=2, col=ivesselnum+1)
+  arrows(subdat$year, subdat$lowCL, subdat$year, subdat$uppCL,
+         code=3, angle=90, length=0.02, col=ivesselnum+1)
+}
+axis(1, at=2014:2016)
+axis(2, at=seq(0, 40, 10), las=2)
+legend("topright", legend=c("Combined", unique(aggcomb2$vessel)), pch=16, lty=2, 
+       col=1:3, bty="n", cex=0.8)
+
+## There are lots of way that we can improve this plot but it serves as an example of
+## how you can use aggregate to calculate summary statistics.
+
+
+aggcomb2
+agg1
+
+## We could combine the total catch (calculated using sum) with the cpue summaries
+aggcomb4=merge(agg1, aggcomb2, by=c("year", "vessel"))
+aggcomb4
+
+## We will cover merge in more detail in another R session.
+
+##=============================================================
+## Summarising in the "dplyr" package - group_by and summarise
+##=============================================================
+## We've seen how to produce summary statistics using the tapply and aggregate functions
+## available in the base package. Now lets see how to do the same thing using the 
+## functions of the dplyr package. The 2 new function we will need are "summarise" and
+## group_by.
+
+## Lets consider our data set with catch=NA removed
+newdat
+
+## And lets try to repeat the aggregate command we used previously to calculate the 
+## sum of the catches and vessel
+agg1=aggregate(catch~year+vessel, newdat, sum)
+agg1
+
+## So, the 2 commands we need to use are summarise and group_by,
+## First we group the data, then we calculate the summary statsitics
+group.data=group_by(newdat, year, vessel)
+summarise(group.data, catch = mean(catch))
+## The output of summarise is a slightly different format than aggregate. Its called
+## a tibble and is somewhat like a data.frame. In fact, it can easily be converted to
+## a data.frame if you wish using "data.frame" or "as.data.frame".
+data.frame(summarise(group.data, catch = mean(catch)))
+as.data.frame(summarise(group.data, catch = mean(catch)))
+
+## Now, remember that piping operator we saw previously when using the "select" and 
+## "filter" functions of dplyr:
+subset7 = dat %>%
+  filter(month%in%c("Feb","Mar")) %>%
+  select(c(year, month, vessel, catch))
+subset7
+## Well, we can use the piping operator now with the group_by and summarise functions
+## in dplyr:
+summarydat1 = newdat %>%
+  group_by(year, vessel) %>%
+  summarise(catch=sum(catch)) %>%
+  as.data.frame
+summarydat1
+## This looks like exactly like the output of the aggregate command above.
+agg1
+
+## Just as in tapply and aggregate we can use a range of functions within the summarise
+## command like sum, mean, min, max etc. However, summarise actually allows different
+## functions to be applied to different variables. For example, we can calculate the
+## mean of the catch rates, but we can also calculate the sum of the catches. 
+summarydat2 = newdat %>%
+  group_by(year, vessel) %>%
+  summarise(catch=sum(catch), cpue=mean(cpue)) %>%
+  as.data.frame
+summarydat2
+## Pretty efficient! - Lets compare this to our aggregate output, remembering that when
+## using aggregate we had to calculate 2 separate aggregate functions then combine via 
+## the merge function!
+aggcomb1
+## The same!
+
+## Now lets add the calculation of the standard errors of the cpues and then their
+## confidence limits. Note that in this calculation I have renamed the average cpue to
+## cpue.mean. This needs to be done as I want to undertake another calculation of the
+## original cpue variable (i.e. the standard error) and the function will get confused
+## with the original cpue variable and the new average value if we use the same name.
+## Its probably good practice to use all new names in the summary function from those 
+## in the original table.
+summarydat3 = newdat %>%
+  group_by(year, vessel) %>%
+  summarise(catch=sum(catch), cpue.mean=mean(cpue), cpue.se=CalcStdError(cpue)) %>%
+  mutate(lowCL = cpue.mean-1.96*cpue.se, uppCL = cpue.mean+1.96*cpue.se) %>%
+  as.data.frame
+summarydat3
+## compare with aggregate output
+aggcomb4
+## Excellent. They match exactly!!
+
+## Just one final point - we could also integrate the filter function within our piping
+## code to use the original data and subset for non-NA values. In addition, rather than
+## writing our own function to compute the standard error we could simply calculate this
+## within our piping code also. 
+summarydat4 = dat %>%
+  filter(!is.na(catch)) %>%
+  group_by(year, vessel) %>%
+  summarise(catch=sum(catch), 
+            cpue.mean=mean(cpue), 
+            cpue.sd=sd(cpue), 
+            n=n()) %>%
+  mutate(cpue.se=cpue.sd/sqrt(n), 
+         lowCL=cpue.mean-1.96*cpue.se, 
+         uppCL=cpue.mean+1.96*cpue.se) %>%
+  as.data.frame
+summarydat4
+## compare with aggregate output
+aggcomb4
+## Excellent. They still match exactly!!
+
+## We could further add to our piping code to use the select function to remove the
+## additonal columns of cpue.sd and n if we didnt want to retain them in the final 
+## data set.
+
+## And quickly heres an example of the plotting available in the tidyverse plotting
+## package called "ggplot2"
+library(ggplot2)
+
+ggplot(summarydat4, aes(year, cpue.mean, colour=vessel)) + 
+  geom_point(pch=16) +
+  geom_line(lty=2) +
+  geom_errorbar(width=.1, aes(ymin=lowCL, ymax=uppCL)) +
+  labs(x="Year",y= "CPUE") + 
+  scale_y_continuous(breaks=seq(0,40,10), limits = c(0, 40)) +
+  scale_x_continuous(breaks=2014:2016)
+
+##=====================================================================================
+## NOW IT'S YOUR TURN!!!!
+##=====================================================================================
+## Try importing the other 'fake' fisheries catch and effort data set called
+# "fisheries catch and effort data v2.csv"
+
+## (1) Create a summary table of total catches by year and month using the tapply 
+## function. Then recalculate using the aggregate function.
+## Which version do you prefer?? Why??
+
+## (2) Create a summary table of average catch rate by year and vessel including their 
+## 95% confidence intervals (assuming a normal distribution). You can choose to use the 
+## aggregate function or the dplyr functions using piping code to do this.
+
+## (3) Plot the catch rates from (2) with their 95% confidence intervals.
+
+##=====================================================================================
+## END OF CODE
+##=====================================================================================
+
+
+##==========================================================================
+## SECTION 1: DATA PREPARATION
+##==========================================================================
+## Read in data from csv file or text file.
+# list files in wd
+dir()
+
+# read in csv data
+dat=read.csv("CAES_Extraction_Block_95020_2010_2017.csv")
+head (dat)
+head(dat,2)
+dim(dat)
+names(dat) # for a data frame, names(dat) is the same as colnames(dat)
+
+# convert upper case characters to lowercase (header line)
+# upper=FALSE is the default option so doesn't necessarily need to be there but there for completion 
+names(dat) = casefold(names(dat), upper=FALSE) 
+
+names(dat)
+
+# convert rest of data frame to lower case
+dat = data.frame(lapply(dat, function(v) {
+  if(is.character(v))return(tolower(v))
+  else return(v)
+}))
+
+head(dat)
+
+## Rename columns if desired.
+
+
+## Remove columns/variables if not required -  maybe there are some 
+## additional variables included in the data set that simply not required, 
+## or maybe you're not sure what some of the variables are - if so, you   
+## might need to check if you need them!
+
+## have a look at the variables
+## use summary functions such as table, unique and summary to look at each variable
+
+str(dat)
+
+head(dat)
+names(dat)
+
+
+unique(dat$"nilr_hi")
+table(dat$"nilr_hi") # table function by default omits any NA's
+table(dat$"nilr_hi", useNA= always) # to keep any NA's in if you want them
+
+
+## subset using select function for columns that are required (remove those that you dont need)
+dat=subset(dat, select=c(year, month, vessel, fdays, crew, port, method, blockx, bdays, hours, pots, shots, netlen, species, sname, 
+                         conditn,livewt, mslow, mshigh))
+head(dat)
+dim(dat)
+str(dat)
+
+## Have an initial look at data to check remaining variables for errors, 
+## outliers and missing values (are they NA's or errors).
+## Conduct some exploratory data summaries of all variables that will be
+## considered in the analyis using functions such as "table" and "unique" to 
+## basically try to understand the format of the data.
+
+unique(dat$year)
+table(dat$year)
+
+unique(dat$month)
+table(dat$month)
+
+table(dat$year, dat$month) # or can do a two way table if want to see in what year and months there is data
+
+table(dat$port) 
+
+table(dat$vessel, dat$port) # good to see whether for eg. a particular vessel is associated with a particular port
+
+unique(dat$blockx) # single block fishery
+table(dat$blockx) # block 95020, with 3508 observations
+
+table(dat$vessel)
+# note there is m039 and m039a. Are they the same vessel/replacement vessel etc...? ie. can they be joined together
+
+table(dat$year, dat$vessel)
+
+## notice m039 and m039a never fishing concurrently- should be considered as the same vessel
+## combine m039a with m039
+dat$vessel[which(dat$vessel=="m039a")] = "m039"
+unique(dat$vessel) # to make sure that they have combined
+
+unique(dat$method)
+table(dat$method)
+
+# pt and ct are the same so can be joined also (to ct as that is obviously the dominant method)
+dat$method[which(dat$method=="pt")]= "ct"
+table(dat$method) # to make sure pt has been reassingned to ct
+
+table(dat$fdays)
+table(dat$bdays) # sum of number of block days doesn't always equal the sum of fishing days
+
+table(dat$crew)
+
+table(dat$hours)
+
+table(dat$pots)
+
+table(dat$method, dat$pots)
+
+table(dat$method, dat$shots)
+
+table(dat$method, dat$netlen)
+
+unique(dat$species)
+
+unique(dat$sname)
+
+unique(dat$conditn)
+
+## Do we need to remove data from incomplete years/months? Might do that at
+## this stage or maybe leave for later.
+
+
+
+##==========================================================================
+## SECTION 2: DATA MANAGEMENT - BY UNIQUE FISHING EVENT
+##==========================================================================
+## With catch and effort data sets, it is often useful to get your data into
+## a form where each line represents a unique fishing event. And typically,
+## this is not how the data is first extracted!!!!! For example, in a CAES 
+## extraction each species caught during a "unique fishing event" (which is 
+## a fishing session in a given year and month for an individual vessel in a 
+## particular block using a particular gear method and configiration) is
+## recorded on a separate line. So the effort variables like days fished, 
+## hours fished, number of pots or shots is repeated on each line. By 
+## creating a data set where each line represents a unique fishing event, it
+## is often a lot easier to then use this new data set to calculate  
+## summaries of effort and catch rate.
+## So, first we are going to get our data in this "unique fishing event" form
+## and then we can move on to actually calculating our summary tables as 
+## outlined in Section 3. 
+
+## In order to do so we must consider:
+## - what variables help us to distinguish each individual fishing event, 
+## - what variables we will need to keep in our data set to make sure we 
+##   achieve our desired objective 
+##    - fishing method/appropriate effort measures for each fishing event 
+##    - catch of single/multiple/all species for each event
+##    - spatial and temporal information for each event. 
+##
+## Questions: 
+## - What species are we interested in - single, few or many?
+## - What fishing methods are we interested in - maybe multiple methods for
+##   total catch but only the main method for catch rates???
+## - What effort variables are we interested in?
+##   It is worth noting here that there are typically more than one effort
+##   measure that CAN and SHOULD be considered. This helps us to get a more 
+##   complete picture, and often forces us to provide justifications for not 
+##   using one measure over another?
+## - What other effort variables are recorded but perhaps not usable at this 
+##   stage as they require further validation or there is some reason why 
+##   their consideration is simply inappropriate?
+
+names(dat)
+
+
+
+
+
+
+##==========================================================================
+## SECTION 3: MAKE SUMMARY TABLES
+##==========================================================================
+## What summaries are we interested in, and in what format? i.e. do we need
+## the tables themselves or do we need them so that we can make a plot?
+## Remember back to our overarching OBJECTIVE - summary tables and plots of
+## catch, effort and catch rate.
+## So what exactly do we want?
+## - Catch by year for target and/or key species
+## - Total catch of all species by year 
+## - Annual catch by fishing method
+## - Annual catch by vessel
+## - Effort by year (what is our measure of effort?? multiple measures??)
+## - Nominal catch rate by year
+## - Annual mean catch rate 
+## - Possibly also require data compiled for future catch rate 
+##   standardisation analysis either by yourself or by someone else i.e. SADA
+##   (Please note that we won't be covering CPUE standardisation in this  
+##   session as that's a quite a task in its own right.)
+## - Anything else???
+
+
+
+##==========================================================================
+## SECTION 3: MAKE SUMMARY PLOTS
+##==========================================================================
+## Using tables above, we will create the plots that we desire for our 
+## overarching OBJECTIVE - summary tables and plots of catch, effort and 
+## catch rate.
+## So what exactly do we want - maybe what we mentioned above?
+## - Catch by year for target and/or key species
+## - Total catch of all species by year 
+## - Annual catch by fishing method
+## - Annual catch by vessel
+## - Effort by year (what is our measure of effort?? multiple measures??)
+## - Nominal catch rate by year
+## - Annual mean catch rate 
+## - Anything else???
+## What type of plot - line plot, bar chart?
+## Do we need to, and are we able to, include confidence intervals?
+## How can we save out plots for future use, and in what format do we wish
+## to save them - jpeg, tiff, eps, png etc.
+
+
+
+##==========================================================================
+## END OF CODE
+##==========================================================================

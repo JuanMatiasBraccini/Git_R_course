@@ -23,7 +23,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 
 ## Acknowledgements
-Big thanks to Simon De Lestang, John Hoenig, Ainslie Denham and Alex Hesp for providing with reference code and material 
+Big thanks to John Hoenig, Ainslie Denham and Alex Hesp for providing with reference code and material 
 
 ## Introduction
 - R is a system for statistical analyses and graphics created by Ross Ihaka and Robert Gentleman <br>
@@ -45,14 +45,14 @@ the active memory of the computer in the form of objects which have a name
 - It includes a console, text editor, tools for plotting, history, debugging, etc
 
 ## What we will do this week
-- R basics (vectors, matrices, lists and data frames)
-- General statistics
-- Data manipulations
-- Functions
-- Plotting and Mapping
-- Multivariate stats
-- Population dynamics
-- Other
+- R basics (Lessons 1 and 2)
+- General statistics (Lessons 3 and 4)
+- Data manipulations (Lesson 5)
+- Functions (Lesson 6)
+- Plotting and Mapping (Lesson 7)
+- Multivariate stats (Lesson 8)
+- Population dynamics (Lesson 9)
+- Other bits and pieces (Lesson 10)
 
 
 ## Let's get started.......

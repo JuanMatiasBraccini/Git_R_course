@@ -70,6 +70,9 @@ all data, presentations and htmls stored in
 
 https://www.dropbox.com/home/R_course_Mazatlan_2019
 
+<br>
+Credits to Ainslie Denham and Alex Hesp
+<br><br>
 
 # Introduction to R and Rstudio
 1.  A script is a combination of **comments** and **words** which is R syntax (code)

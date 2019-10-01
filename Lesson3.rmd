@@ -63,8 +63,8 @@ knitr::opts_chunk$set(fig.width = 6,fig.height = 6,error=TRUE,
 # Lesson goals
 We're going to apply a range of general statistical analyses to real case examples
 
+<br>
 Credits to John Hoenig
-
 <br><br>
 
 # 1. Lemon shark tagging

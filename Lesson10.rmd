@@ -1,5 +1,5 @@
 ---
-title: "Lesson X. Version control"
+title: "Lesson 10. Other bits and pieces"
 knit: (function(inputFile, encoding) {
   rmarkdown::render(inputFile, encoding = encoding, output_dir = "C:/Matias/Cursos/2019_Mexico/htmls") })
 
@@ -60,8 +60,32 @@ pre {
 knitr::opts_chunk$set(fig.width = 6,fig.height = 6,
                         echo = TRUE, warning=FALSE,message=FALSE)
 ```
+# Lesson goals
+We're going to a range of other R related concepts and applications:
+* Directories and file paths
+* Vectorization
+* Version control and Rmarkdown
 
-# Version control
+<br>
+Credits to John Hoenig, Ainslie Denham and Alex Hesp
+<br><br>
+
+
+<br>
+
+# Directories and file paths
+
+
+<br><br>
+
+# Vectorization
+
+
+
+<br><br>
+
+
+# Version control and Rmarkdown
 
 What problems can you see with the following approach to version control?
 

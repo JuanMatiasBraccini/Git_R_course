@@ -1,0 +1,1034 @@
+---
+title: "Lesson 4. General statistics ...continued"
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "C:/Matias/Cursos/2019_Mexico/htmls") })
+
+output: 
+  html_document:
+    code_folding: show
+    highlight: haddock
+    keep_md: yes
+    theme: united
+---
+
+<style type="text/css">
+h1.title {
+  font-size: 30px;
+    color: Maroon;
+  text-align: center;
+          }
+h3.subtitle {
+  font-size: 22px;
+    color: Maroon;
+  text-align: center;
+            }
+h4.author { 
+    font-size: 24px;
+      color: FireBrick;
+  text-align: center;
+          }
+h4.date { 
+  font-size: 18px;
+  text-align: center;
+        }
+h1{
+  font-size: 22px;
+  color: DarkBlue;
+  }
+h2{
+  font-size: 20px;
+  color: Blue;
+  }
+h3{
+  font-size: 18px;
+  color: SteelBlue;
+  }
+body{
+    font-family: Helvetica;
+    font-size: 14pt;
+    }
+code.r{
+  font-size: 16pt;
+      }
+pre {
+  font-size: 16pt;
+}
+</style>
+
+
+```{r globaloptions, include=FALSE}
+knitr::opts_chunk$set(fig.width = 6,fig.height = 6,
+                        echo = TRUE, warning=FALSE,message=FALSE)
+```
+# Lesson goals
+* We're going to learn how to implement:
+    + generalised linear models
+    + model optimisation through maximum likelihood estimation
+    + bootstrapping and Monte Carlo methods
+ 
+<br>
+Credits to John Hoenig, Ainslie Denham and Alex Hesp
+<br><br>
+
+# Before starting...some further R tips
+```{r}
+# remove anything stored in memory
+rm(list=ls())
+
+# check your working directory
+getwd()
+
+# change your working directory
+setwd("C:/Users/myb/Desktop")
+setwd("C:\\Users\\myb\\Desktop")  #same thing...
+getwd()
+
+# The default settings sets columns with words to type 'factor'.
+options(stringsAsFactors = FALSE)  #telling R not to do that...
+
+```
+<br><br>
+
+# Generalised linear models
+
+## Logistic regression of proportion mature versus length of hammerhead sharks.
+
+A linear regression would not be a good, general solution because it could predict a negative proportion or a proportion greater than 1, neither of which makes sense. 
+Thus, we want our response curve to look “S”-shaped. 
+The logistic model is: 
+$$P(Y=1)=\frac{e^{\beta_0+\beta_1x}}{1+e^{\beta_0+\beta_1x}}$$
+where Y is the response, x is the explanatory variable, and $\beta_0$ and $\beta_1$ are the regression coefficients to be determined. Here, Y is a dichotomous variable taking on the values 1 if a condition occurs and 0 if it does not occur. As an example, consider data on male scalloped hammerhead maturity versus length – see graph below.
+
+
+```{r}
+# note: data and analysis by Al Harry (Harry et al 2011) and
+#       modified by J. Hoenig
+#       lengths measured to the nearest mm
+
+hndl='C:/Matias/Cursos/2019_Mexico/Data.sets/'
+hammerdata<-read.table(paste(hndl,"Lesson4_HammerheadMaturity.txt",
+                             sep=''),header=T)
+dim(hammerdata)        # number of rows and columns in the data
+str(hammerdata)        # structure of the database
+head(hammerdata,n=4)   # first 4 rows
+summary(hammerdata)    # note: ALL are males
+
+# extract the variables into more convenient names
+Stage = hammerdata$Stage
+STL = hammerdata$STL
+
+plot(STL,Stage)
+
+# To specify a logistic regression it suffices to say 
+# family=binomial (for the error structure) because the 
+# default for family=binomial is to use a logit transform
+# which gives the logistic model. 
+
+#fit model
+Model1 <- glm(Stage~STL,family=binomial)
+# the function glm() fits a generalized linear model
+# Stage~STL is a formula which means that the maturity 
+# stage (immature or mature) is explained by the length
+# of the shark.
+# By specifying family=binomial we are saying we want to fit
+# a logistic relationship of proportion mature versus length STL
+   
+summary(Model1)
+class(Model1)
+# the output type is of class "glm" (also class "lm")
+# R has "generic" functions, like plot( ) and summary( ),
+# which recognize various classes of object and automatically
+# use the correct "method" for operating on that class 
+
+attributes(Model1)  # what's stored in Model1
+Model1$aic    # you can access this information using the $ notation
+
+  
+# Make some graphs
+plot(Model1)
+# What's happening here? 
+# plot( ) is recognizing the output is of class "glm" and
+# is choosing the plotting routines to graph the results.
+
+# Unfortunately, we have binary data so the results are not
+# meaningful.
+# (See below for an explanation of binary and binomial data)
+
+
+# If we want to see the fitted logistic curve we can compute
+#  predicted values for a vector of x-values (lengths, STL)
+
+#First create a vector with 50 lengths for which we want predictions
+predictionpoints = seq(min(STL),max(STL),length.out=50)
+predictionpoints
+
+#Next get predictions from the model for that vector
+predictions = predict(Model1,newdata=list(STL=predictionpoints),
+                      type="r")
+
+# NOTE: there are two tricks here. 
+
+# First, although the help page for predict doesn't tell you, 
+# you must specify the values of x for which you want predictions
+# as a list.
+# We specify STL=predictionpoints so that when R looks at Model1 
+# and expects to see the x-variables be called STL it will know to
+# substitute predictionpoints for STL.
+
+# Next, note that we used the glm() function which transforms the
+# data to a linear relationship. 
+# When we ask for predictions we need to specify on which scale 
+# we want the predictions - on the transformed (linear) scale or
+# on the actual scale of the data. 
+# Here, we specified type="response" to get
+# the predictions on the original scale. 
+# The default is type="link" which would give the predictions on
+# the linearized (logit) scale.
+
+plot(predictionpoints,predictions,xlab="",ylab="Proportion mature",
+     xlim=c(0,2500))
+
+#manual construction
+bo=-24.19322975
+b1=0.01644139
+y=exp(bo+b1*predictionpoints)/(1+exp(bo+b1*predictionpoints))
+lines(predictionpoints,y,col=2)
+legend('topleft',c('predict_preds','manual_preds'),text.col=1:2)
+```
+```{r}
+# Let's look at the parameter estimates
+Model1$coefficients
+
+# compute the 95% confidence intervals using the profile
+# likelihood method
+confint(Model1)
+
+
+# Show the length where 50% are mature
+# We could solve the logistic equation for L50:
+# .5 = 1/(1+exp(bo + b1*L))
+# where bo is the intercept and b1 is the slope estimated
+# by the logistic regression. Thus, 
+#       Length at 50% maturity = -bo/b1
+leng50 = -Model1$coefficients[1]/Model1$coefficients[2]
+leng50
+
+# but...someone has already created a function to do it. 
+# ... Suppose we wanted to know the lengths
+# at which 50% and 90% of the sharks are mature
+library(MASS)
+dose.p(Model1,p=c(0.5,0.9))
+
+```
+
+```{r}
+# Binomial (binned) data:
+# Instead of having exact lengths for each shark
+  #  we have the length recorded by interval,
+  # such as 5 cm "bins". 
+# Then, the proportion mature in each bin or
+  # interval is a binomial random variable. 
+# note: If we have binomial data, we might worry about 
+#       overdispersion, which is when the data have more
+#       variability than what is theoretically supposed 
+#       to occur. For examples, if shark samples come from
+#       shark schools of similar size...
+#       In such a case, test for overdispersion by 
+#       estimating the dispersion parameter (i.e.
+#       divide the residual deviance by the residual 
+#       degrees of freedom. If this is > 1 use a
+#       quasilikelihood  (See below).
+
+#How to bin your data
+binned.data = table(cut(STL,15),Stage)
+#cut() is assigning each length to one of 15 bins
+#     and each maturity to one of 2 bins (immature and mature).
+#table() counts how many observations are in each
+# combination of length x maturity.
+binned.data    
+
+#plot proportion mature versus the midpoint of the length bins
+proportion.mature = binned.data[,2]/
+                    (binned.data[,1] + binned.data[,2])
+range(STL)
+binwidth = (max(STL) - min(STL))/15
+binwidth
+bins = 0:14
+midpoints = min(STL) + .5*binwidth + binwidth*bins
+midpoints
+plot(midpoints,proportion.mature,ylab="proportion mature",
+     xlab="length",xlim=c(0,2500))
+
+#fit model to binned data
+y = cbind(binned.data[,2],binned.data[,1])
+y
+Model2 = glm(y~midpoints,family=binomial)
+Model2
+summary(Model2)
+# The overdispersion parameter can be computed from the output as
+# residual deviance / degrees of freedom = 1.7865/13, which is 
+# < 1 by far so we would conclude we have no evidence
+# of overdispesion. But, for illustrative purposes we try
+# quasilikelihood.
+Model3 <- glm(y~midpoints,family=quasibinomial)
+Model3
+
+
+predictions2 = predict(Model2,type="r")
+# NOTE: Because the data are binned, we can only 
+# compute predicted values for the 15 length bins.
+# Also, we use the same trick described above and tell R 
+# that we want the predictions on the original scale 
+# (proportion mature) rather than on the transformed (logit) scale.
+
+plot(predictionpoints,predictions,xlab="",ylab="Proportion mature",
+     type='l',xlim=c(0,2500))
+lines(midpoints,predictions2,col=2)
+legend('topleft',c("binary data","binomial"),lty=1,col=1:2,bty='n')
+
+```
+<br>
+## Model selection.
+Information-theoretic approaches provide methods for model selection and 
+(multi)model inference that differ quite a bit from more traditional 
+methods based on null hypothesis testing
+
+Now we are going to consider the effect of multiple predictors and select the best model,
+We will use data from the meta-analysis by Bangert-Drowns et al. (2004) on the effectiveness
+of school-based writing-to-learn interventions on academic achievement
+(help(dat.bangertdrowns2004) provides a bit more background)
+
+
+```{r}
+library(metafor)
+dat <- dat.bangertdrowns2004
+str(dat)
+
+#the following variables will be examined as potential predictors: 
+# length: treatment length (in weeks)
+# wic: writing in class (0 = no; 1 = yes)
+# feedback: feedback (0 = no; 1 = yes)
+# info: writing contained informational components (0 = no; 1 = yes)
+# pers: writing contained personal components (0 = no; 1 = yes)
+# imag: writing contained imaginative components (0 = no; 1 = yes)
+# meta: prompts for metacognitive reflection (0 = no; 1 = yes)
+
+#deje aca http://www.metafor-project.org/doku.php/tips:model_selection_with_glmulti_and_mumin
+
+```
+
+<br><br>
+
+# Model optimisation through maximum likelihood estimation
+```{r}
+setwd('C:\\Matias\\Cursos\\2019_Mexico\\Data.sets')
+MatDat <- read.csv("Lesson4_MaturityData.csv", header = T)
+head(MatDat)
+
+# FishNum ObsAge ObsLen ObsMatCat
+# 1       1      3    263         0
+# 2       2      6    411         1
+# 3       3      4    315         0
+# 4       4      7    412         1
+# 5       5      8    477         1
+
+
+# so we have a unique fish number, the age and length of each fish,
+# and a variable called ObsMatCat (short for observed maturity category).
+# what values are there for this variable?
+unique(MatDat$ObsMatCat)
+# [1] 0 1
+
+# Zeros and ones! The zeros are for immature fish, and the ones are for mature
+# fish. For the fish biologists among us, recall that to estimate maturity, we 
+# consider fish only in the spawning season when we can tell if a fish 
+# is mature or not (ovaries contain eggs with yolk, testes contain mature 
+# spermatozoa). For those who have "staged" fish gonads, (using Laevastu's 1965 scheme)
+# the immature category "0" could be taken to represent all fish staged  as I=immature
+# or II=resting), and the mature category may be taken to represent fish staged as 
+# III=developing, IV=maturing, V=mature, VI=spawning, VII=post-spawning or VIII=recovering). 
+# Whether/why fish should be grouped this way (or not) is a biologist discussion, not a
+# coding question, let's not get into it! Point is, working with 
+# your own data, you may need to create a variable yourself that categorises 
+# individuals as either "immature" or "mature", depending on gonadal stage.
+
+# For the crab biologists, for example, as it is possible to tell if a crab
+# is "functionally" mature (able to mate) at any time of year,
+# the maturity analysis is often based on fish collected throughout
+# the year, already grouped into "immature" vs "mature" crabs, although
+# there might be good logic for considering data from a certain period of
+# the year, such as when crabs are actually berried/spawning, noting that
+# crabs will grow throughout the year, which will affect results.
+# In any case, the analysis is effectively same for fish and invertebrates.
+
+
+# how many length obs?
+length(MatDat$ObsLen)
+
+# how many age obs?
+length(MatDat$ObsAge)
+
+# same, good!
+# let's store this information
+nobs <- length(MatDat$ObsLen)
+
+# get minimum and maximum lengths
+min(MatDat$ObsLen)
+max(MatDat$ObsLen)
+
+# get minimum and maximum ages
+min(MatDat$ObsAge)
+max(MatDat$ObsAge)
+
+# specify minimum and maximum lengths for analysis, and interval for length categories
+MinLen <- 0
+MaxLen <- 600
+LenInc <- 50
+
+# set up vector of length bins using numbers specified above
+(LenCats <- seq(MinLen,MaxLen,LenInc))
+
+# determine number of length categories
+(nlengthcats <- length(LenCats))
+
+# get length category number for each observation
+# note that fish between 0-49 mm are in the first length category
+# explaining the "+1" bit in the calculation. Fish between 50-99 mm 
+# are in the second length category and so on 
+(ObsLenCats = trunc(MatDat$ObsLen/LenInc)+1)
+# let's do a check
+
+# the length of our first fish is 
+MatDat$ObsLen[1]
+# [1] 263
+
+# what length class is it, according to our calculation?
+ObsLenCats[1]
+# [1] 6
+
+# What is the lower bound of the 6th length category?
+LenCats
+# [1]   0  50 100 150 200 250 300 350 400 450 500 550 600
+
+# 250 mm
+# The length of 263 mm for our first fish is between 250 and 299 mm, so yep, its correct
+# Check, OK
+
+# set up some vectors, so we can store the observed frequencies of
+# mature and immature fish in each length bin
+(ObsFreqImm = rep(0,nlengthcats))
+(ObsFreqMat = rep(0,nlengthcats))
+
+# sum up the numbers of fish with a maturity category of 0 (immature) in each
+# 50 mm length class, and do the same for those with a maturity category
+# of 1 (mature).
+for (i in 1:nlengthcats) {
+  ObsFreqImm[i] <- length(which(ObsLenCats==i & MatDat$ObsMatCat==0) )
+  ObsFreqMat[i] <- length(which(ObsLenCats==i & MatDat$ObsMatCat==1) )
+}
+ObsFreqImm
+ObsFreqMat
+
+# calculate proportion mature in each length category
+(PropMat = ObsFreqMat / (ObsFreqMat + ObsFreqImm))
+
+# [1]       NaN       NaN 0.0000000 0.0000000 0.0952381 0.3582090 0.5169492 0.6890756 0.8255814 0.8888889
+# [11] 1.0000000       NaN       NaN
+
+# A few NaN (not a number values) in results - results from calculation attempting
+# to divide by zero, i.e. dividing by a total sample size of zero for certain
+# small and very large length categories. We'll deal with the NaNs later.
+(ObsFreqMat + ObsFreqImm)
+# [1]   0   0   2   3  21  67 118 119  86  36   7   0   0
+
+
+# plot trend
+(xVals <- LenCats + (LenInc/2))
+# xvals defines the lower bounds of the length categories. 
+# here we've added 25 mm to the values used to define the x axis so that the points go through 
+# the middle of the length categories (noting that there are various lengths of fish in
+# each length caegory, so any statistic for the overall length category is best
+# represented at the middle of this category on a plot.
+# For example, for the 0-49 mm length category, the value for proportion mature for the full 
+# category is plotted at 25
+
+plot(xVals,PropMat,"o",xlab="length",ylab="prop mature",frame.plot=F, 
+     xlim=c(0,MaxLen),ylim=c(0,1))
+
+# By the way, if we squint hard enough, we might agress that the trend is roughly s-shaped,
+# so it might be appropriate to fit a logistic curve to these data. We'll try it anyway!
+# But, if you have some data and, clearly, the trend is not s-shaped, don't fit this type of
+# curve to it, as you'll have all sorts of problems, and it not likely to be appropriate!
+
+# I'd like to know the sample size in each length category - for each length category,
+# is the calculated proportion based on a large or small sample - how reliable are our
+# values for proportion mature for each length category?
+# plot observed vs expected trends
+nObsInLenCat <- ObsFreqImm + ObsFreqMat 
+# Note, adding the proportions of mature and immature fish gets total number of observations
+
+text(LenCats+40,PropMat+0.03,cex=0.6,pos=1,labels=nObsInLenCat)
+
+# Here, with "lencats+40", adding 40 to the value moves the numbers to the right 
+# of the data points, for better visual display
+
+# Interesting! So we have very low sample sizes for the smallest length categories
+# very good sample sizes for fish between about 250 and 450, and a very low
+# sample size for fish above 500 mm. So most information is for fish of medium-sized
+# fish. Question, what's the uncertainty associated with each proportion mature value?
+# Let's calculate some approximate 95% confidence limits (accepting that the confidence
+# limits are not well estimated at low sample sizes, or when the proportion is close to zero
+# or 1, with the formula I've used below)! In other words, let's get a rough idea of the levels 
+# of uncertainty associated with out proportion values.
+
+# here are our length categories
+LenCats
+# [1]   0  50 100 150 200 250 300 350 400 450 500 550 600
+# here are the estimated confidence intervals (based on normal approximation method)
+PropConfInt95 <- 1.96 * sqrt(PropMat * (1 - PropMat) / nObsInLenCat); PropConfInt95
+# [1]        NaN        NaN 0.00000000 0.00000000 0.06405645 0.05857707 0.04600228 0.04243140
+# [9] 0.04091920 0.05237828 0.00000000        NaN        NaN
+
+# Again, a few NaN (not a number values) - we can't divide anything by zero, so where 
+# we have a sample size of zero, we get a NaN. Let's keep going.
+
+# a few length categories have a sample size of zero, so can't calculate 
+# confidence intervals for these. Where probability is close to zero or 1, 
+# confidence interval is not reliable - so let's focus on the others)
+# Let's calculate the "confidence limits" (note, the interval is the range between
+# the mean and confidence limit)
+PropMat_Low95CL <- PropMat - PropConfInt95; PropMat_Low95CL
+# [1]         NaN         NaN  0.00000000  0.00000000 -0.03031254  0.24339790  0.42678469
+# [8]  0.60591009  0.74537976  0.78622746  1.00000000         NaN         NaN
+
+# One of our confidence limits is negative - can't have a negative proportion.
+# I'm not happy with this - let's set any negative values to zero.
+PropMat_Low95CL <- replace(PropMat_Low95CL,which(PropMat_Low95CL<0),0); PropMat_Low95CL
+#?replace
+# I sometimes find this replace function useful - other ways to do this! 
+
+# Could also use an 'ifelse' statement
+#PropMat_Low95CL <- ifelse(PropMat_Low95CL<0,0,PropMat_Low95CL); PropMat_Low95CL
+
+PropMat_Up95CL <- PropMat + PropConfInt95; PropMat_Up95CL
+# 
+# No issues I can see. It is possible that with another data set, some upper limits 
+# for proportions could go above 1. Just in case, let's make sure its never 
+# possible for this to happen, by setting our upper limit to 1. This is known 
+# as "defensive coding" 
+PropMat_Up95CL <- replace(PropMat_Up95CL,which(PropMat_Up95CL>1),1); PropMat_Up95CL
+
+# Now, we still have some NaNs, which from experience, will be a problem
+# when we go to plotting our confidence limits. Also, we can't plot
+# a confidence limit where the interval is zero (as the arrow will be 
+# infintesimally small!). So we'll stop all of this nonsense! 
+# We'll find where anything that is not a NaN or is above zero and
+# just plot the confidence limits for these
+Positions <- which(!is.na(PropConfInt95) & PropConfInt95 > 0) 
+
+# plot it!
+plot(xVals,PropMat,"o",xlab="length",ylab="prop mature",frame.plot=F, 
+     xlim=c(0,MaxLen),ylim=c(0,1))
+arrows(xVals[Positions],PropMat_Low95CL[Positions], 
+       xVals[Positions], PropMat_Up95CL[Positions], 
+       code=3, angle=90,length=0.02, col='black')
+
+# After all that, its clear we have lots of samples around the 50% mark, 
+# so we should be able to get a pretty good estimate for the parameter L50,
+# describing the length at which 50% of fish reach maturity. We might be less
+# certain about what's going on for very smaller fish and larger fish - we 
+# can't even get reliable error bars for these!
+
+# Right, so we want to fit a curve to the data. A logistic (s-shaped) curve.
+# OK, let's get you an s-shaped curve. Here's one - with two parameters,
+# one we'll call L50 (length at which 50% of fish are mature), and the other
+# we'll call the slope (the slope of the curve). Note that this curve is
+# "symmetric" - the shape of the lower half is the same as the upper half,
+# just inverted. This is an assumption! Looking at the data, yes, this looks
+# kind of true, so OK, we'll stick with this curve.
+
+# Specify starting values for our curve. Length at 50% maturity seems somewhere
+# around 300, and the slope - ? - let's take a guess!
+L50 <- 300
+slope <- 0.5
+
+# now estimate probability of maturity at those lengths, using our
+# logistic equation
+ProbOfMaturity <- 1 / (1 + exp(-slope * (xVals - L50)))
+
+# let's overlay the line on our plot
+lines(xVals,ProbOfMaturity, type="o",col="blue")
+
+# right, so slope is way too high, let's reduce it, recaluclate our line
+# and redraw the plot
+L50 <- 300
+slope <- 0.03
+ProbOfMaturity <- 1 / (1 + exp(-slope * (xVals - L50)))
+
+plot(LenCats+25,PropMat,"o",xlab="length",ylab="prop mature",frame.plot=F, 
+     xlim=c(0,MaxLen),ylim=c(0,1))
+arrows(xVals[Positions],PropMat_Low95CL[Positions], 
+       xVals[Positions], PropMat_Up95CL[Positions], 
+       code=3, angle=90,length=0.02, col='black')
+text(LenCats+40,PropMat+0.03,cex=0.6,pos=1,labels=nObsInLenCat)
+lines(xVals,ProbOfMaturity, type="o",col="orange")
+# getting closer! Not an unreasonable starting point I think!
+
+# Right, so now, how do we fit our curve. From our session on fitting a growth
+# curve, it should go through the middle of the data, right? What's the data -
+# proportions at length. To fit it, we could think about minimising the 
+# sum of squared differences (residuals) between our observed proportions and 
+# expected proportions (based on our logistic curve). This would give us an
+# answer, but its not my preferred option. My issue is that doing this would give
+# "equal weighting" to the data in all length categories, but as we know from
+# above, we have low sample sizes in some length categories. In addition, when
+# thinking about how certain our results are likely to be, if we used this approach,
+# we'd have "thrown away" most of the information we had in our data regarding 
+# uncertainty (as data for individual fish would be grouped by category).
+
+# How else to approach it. Fit to data for individual fish! How to do this?
+# As the data are "binary" - i.e. for each fish, there are two possibilities: 
+# the fish is either mature or it is not, this type of data does not lend itself
+# to calculating "residuals" and minimising the sum of squares, as we did for our
+# growth analysis. It just won't work! So we need a new approach - likelihood estimation.
+
+# Let's think about what we're doing a bit more. Let's take our first fish!
+MatDat[1,]
+
+# So, it's 263 mm long, and it is recorded as being immature (ObsMatCat = 0).
+# Question is, would we have expected this fish to have been immature, given
+# its size? Based on our logistic curve (given our specified values for L50 and slope), 
+# we can calculate the probability that a fish with this length will be
+# mature - that's what the curve describes, if its the right one! Let's do this.
+L50 <- 300
+slope <- 0.03
+LengthOfOurfish <- 263
+(ProbOfMaturity_Fish1 <- 1 / (1 + exp(-slope * (LengthOfOurfish - L50))))
+# so, on the basis of our curve, we'd say there was a 25% chance that
+# a this fish would have been classified as mature, based on what we
+# know about its length. We could also have said that the "likelihood"
+# of that fish being mature, given its length, is 0.25 (or 25% chance).
+
+# But, for this fish, we recorded that it was immature! What is the likelihood
+# that a fish of 263 mm is immature - well, as there are only two possibilities,
+# its mature or its not, then the probability of being immature is 1 minus the
+# probability of being mature. Or, we could say, the likelihood of what we 
+# observed (a fish being immature at 263 mm) is 1 - 0.25
+Likelihood_Fish1 <- 1 - ProbOfMaturity_Fish1; Likelihood_Fish1
+
+# what about fish 2
+MatDat[2,]
+# this one has a length of 411 mm, and is recorded as mature.
+# how likely is this observation? Because its recorded as mature,
+# this is the same as that described by from our curve - probability of
+# being mature at that length.
+(ProbOfMaturity_Fish2 <- 1 / (1 + exp(-slope * (LengthOfOurfish - L50))))
+Likelihood_Fish2 <- ProbOfMaturity_Fish2
+
+# so, to calculate the likelihood of the observation, for each fish, its
+# Likelihood = ProbOfMaturity - if recorded as mature
+# Likelihood = (1 - ProbOfMaturity) - if recorded as immature
+
+# So what's the likelihood, for all of our data - sum them up? Almost. 
+# We need one more mathematical trick! As many of our probability values 
+# are likely to be very small (close to zero), if we have lots of them (i.e. lots of data),
+# we can have problems with rounding errors affecting our results - as computers
+# are only accurate to about 6 decimal places. We can avoid this problem
+# by working with logarithms. So, we calculate the natural logarithms of
+# all our likelihood values (for all our fish), and then sum these up to
+# calculate an overall log-likelihood.
+
+# so, working with all our data
+
+# Calculate the probability of each fish being mature, given its length,
+# based on our logistic curve
+L50 <- 300
+slope <- 0.03
+ProbOfMaturity <- 1 / (1 + exp(-slope * (MatDat$ObsLen - L50)))
+
+# Calculate the likelihood of each maturity observation
+# create an empty vector of teh right length to store results
+Likelihood <- rep(NA,nobs) 
+
+Likelihood[which(MatDat$ObsMatCat==1)] <- ProbOfMaturity[which(MatDat$ObsMatCat==1)] 
+Likelihood[which(MatDat$ObsMatCat==0)] <- 1 - ProbOfMaturity[which(MatDat$ObsMatCat==0)] 
+
+
+# Calculate the natural logarithms for all likelihood values
+LL <- log(Likelihood)
+
+# sum them up (or calculate the overall log-likelihood)
+(NLL = sum(LL))
+# not quite - in our case when using nlminb!
+
+# Often, when we work with likelihoods, we want to find the parameters associated with the
+# "maximum" possible value for the overall likelihood, as this is associated with
+# the best possible fitting curve. However, if want to use nlminb (the same optimizer we 
+# used to fit our growth curve), it actually wants to find the smallest value for 
+# an "objective function" - whether that be sum of squared residuals used for
+# our growth curve, or in this case, likelihood statistic. 
+# So, what we do in our case is calculate, not the overall "log-likelihood", but rather 
+# the overall "negative log-likelihood", as minimising this would be equivalent to maximming 
+# the log-likelihod. 
+# So the calcualtion is:
+(NLL = -sum(LL))
+
+
+# As when fitting a growth curve (last lesson), for optimization, we need to specify a 
+# "function", which is to be passed to the optimizer, along with the starting values of 
+# the parameters. This function needs to calculate, in this case, the probability of fish 
+# being mature, given their associated lengths, and the negative log-likelihood (objective function value),
+# associated with the data and different sets of maturity parameter values
+
+# So, as when we fitted the growth curves, we've "wrapped up" our code for calculating
+# the NLL, into a function
+Calc.NLL.for.maturity <- function(params) {
+  Likelihood <- rep(-999,nobs)
+  
+  # get expected lengths for each cohort, and overall
+  ProbOfMaturity <- 1 / (1 + exp(-params[2] * (MatDat$ObsLen - params[1])))
+  
+  Likelihood[which(MatDat$ObsMatCat==1)] <- ProbOfMaturity[which(MatDat$ObsMatCat==1)] 
+  Likelihood[which(MatDat$ObsMatCat==0)] <- 1 - ProbOfMaturity[which(MatDat$ObsMatCat==0)] 
+  
+  LL <- log(Likelihood + 1E-4)
+  
+  # calculate the negative log-likelihood
+  NLL = -sum(LL)
+  
+  # set function result to NLL
+  results <- NLL
+  
+  return(results) 
+  
+}
+
+#----------------------------------------------------------------------
+# Specify starting parameters
+L50 <- 400
+slope <- 0.3
+
+# define starting values of the parameters to be estimated
+(params = c(L50,slope))
+
+# checking that the function works and returns a value for the objective function
+test.function <- Calc.NLL.for.maturity(params); test.function
+
+#----------------------------------------------------------------------
+# fit the model
+#----------------------------------------------------------------------
+
+# fit model with nlminb optimizer
+nlmb <- nlminb(params, Calc.NLL.for.maturity, gradient = NULL, hessian = TRUE)
+nlmb
+nlmb$par[1]
+#[1] 322.9335
+nlmb$par[2]
+#[1] 0.0164233
+nlmb$convergence
+# [1] 0
+
+# seems OK. Is it really OK?
+
+# we can also use the control and trace arguments to see what is happening
+# to the likelihood (or another objective function) and parameters, when nlminb 
+# is searching for the parameters associated with the the minimum NLL
+nlmb <- nlminb(params, Calc.NLL.for.maturity, gradient = NULL, hessian = TRUE, control=list(trace=1))
+nlmb
+
+# hmm, if we look at what's happening to the slope parameter, at one point, it 
+# goes negative, which shouldn't happen. The optimisation algorithm seems
+# to have "righted itself", but this isn't ideal, as there could be a problem
+# with other data sets. This time, we were lucky!
+
+# However, we can fix it so that we could never have things go bust, due
+# to the slope parameter being allowed to go negative. 
+# This is a "nice to do" here, but possible essential, for another time.
+
+# We will use a transformation approach to prevent the slope
+# parameter ever going negative in calculations. As our starting value, we
+# can take the natural logarithm of our intended value. Note that when we
+# back log-transform a logged value, it can't be negative. Let's show this.
+# We back log-transform using the "exp" function - for exponent.
+
+# log a small value
+(LoggedValue <- log(0.0001))
+
+# back log-transform value
+(BacktransformedValue <- exp(LoggedValue))
+
+# back log-transform a really negative logged number
+exp(-100)
+# so, never goes negative.
+
+# Now, we first modified our function for calculating the NLL
+
+Calc.NLL.for.maturity <- function(params) {
+  
+  L50 <- params[1] # this one seems OK, so leave as is.
+  slope <- exp(params[2]) # we back log-transform here, to use in our equation
+  # nlminb is interested in the logged value fed into the function, in the
+  # vector params
+  
+  Likelihood <- rep(-999,nobs)
+  
+  # get expected lengths for each cohort, and overall
+  # we've modifed the equation to use the names of the parameters,
+  # for convenience
+  ProbOfMaturity <- 1 / (1 + exp(-slope * (MatDat$ObsLen - L50)))
+  
+  Likelihood[which(MatDat$ObsMatCat==1)] <- ProbOfMaturity[which(MatDat$ObsMatCat==1)] 
+  Likelihood[which(MatDat$ObsMatCat==0)] <- 1 - ProbOfMaturity[which(MatDat$ObsMatCat==0)] 
+  
+  LL <- log(Likelihood + 1E-4)
+  
+  # calculate the negative log-likelihood
+  NLL = -sum(LL)
+  
+  # set function result to NLL
+  results <- NLL
+  
+  return(results) 
+  
+}
+
+# Specify starting parameters, taking the natural logarithm of the intended starting 
+# value for the slope
+L50 <- 400
+lnslope <- log(0.3)
+
+# define starting values of the parameters to be estimated
+(params = c(L50,lnslope))
+
+# run nlminb
+nlmb <- nlminb(params, Calc.NLL.for.maturity, gradient = NULL, hessian = TRUE, control=list(trace=1))
+nlmb
+
+nlmb$par[1] # L50
+nlmb$par[2] # ln of slope
+
+# store the parameter estimates from nlminb
+Est.L50 = nlmb$par[1]; Est.L50
+Est.slope = exp(nlmb$par[2]); Est.slope 
+# values are same as before, but this is a slightly more robust way of
+# fitting.
+
+
+
+# Biologists often like to use a slightly different parameterisation of 
+# the logistic equation, containing an "L50" (as we have done already - 
+# describing the length at which 50% of fish are mature), and an L95 
+# describing the length at which 95% of fish are mature), rather than a slope
+# which is harder to visualise. We can get the L95 value from our original
+# equation using this formula, if we want it
+Est.L95 = (log(19)/Est.slope) + Est.L50; Est.L95
+
+# calculate expected maturity at length
+(ExpPropMat = 1 /  (1 + exp(-Est.slope * (xVals - Est.L50))))
+
+# or we could do this, which is the same
+(ExpPropMat = 1 /  (1 + exp(-log(19)*(xVals - Est.L50) / (Est.L95 - Est.L50))))
+# the equations give the same result.
+
+# plot expected curve over observed data
+plot(xVals,PropMat,"o",xlab="length",ylab="prop mature",frame.plot=F, 
+     xlim=c(0,MaxLen),ylim=c(0,1))
+arrows(xVals[Positions],PropMat_Low95CL[Positions], 
+       xVals[Positions], PropMat_Up95CL[Positions], 
+       code=3, angle=90,length=0.02, col='black')
+text(LenCats+40,PropMat+0.03,cex=0.6,pos=1,labels=nObsInLenCat)
+lines(xVals,ExpPropMat, type="o",col="orange")
+
+# So it fits pretty well throughout most of the range of data, except for the
+# low end, where there are very few data anyway. If we were to calcualte
+# confidence limits around the actual curve, they would be broad at particularly
+# the lower end, given lack of data/information for small fish. 
+
+# We could also plot this way. Note that the bars span over the specified
+# length increment, whereas the estimated maturity values correspond
+# to a particular length. Noting that the method used actually fits
+# to data for individual fish, not proportions at length, to visualise
+# results, arguably, it makes some sense to plot the expected maturity curve
+# over the mid points of the bars (or as in the way we did above). Make sure 
+# that the curve does not "slip" to the left or right, by corresponding to either the lower or
+# upper boundary of the length classes - this will look very wrong!
+df.bar <- barplot(PropMat,names.arg = LenCats,ylim=c(0,1.2),
+                  las=1,cex.axis=0.8,cex=0.8,col="white",
+                  ylab="Prop. Mature",xlab="Length, mm")
+lines(x = df.bar, y = ExpPropMat,col="orange","o",pch=16)
+text(df.bar,PropMat+0.2,cex=0.6,pos=1,labels=nObsInLenCat)
+
+# OK, so now, we need estimates of uncertainty for our estimated parameter
+# values. Let's get these from optim, by providing it the estimates 
+# of our parameters produced by nlminb
+# so, what's the parameter estimates?
+nlmb$par
+nlmb$par[1] # L50
+nlmb$par[2] # slope (in log space)
+
+# set starting values for optim
+params <- c(nlmb$par[1],nlmb$par[2])
+
+# run optim, to get parameter estimates, along with the Hessian matrix
+# required to calculate our 95% confidence limits
+opt <- optim(par=params,fn=Calc.NLL.for.maturity,method="Nelder-Mead",hessian=TRUE)
+
+# look at parameter estimates from optim and compared with nlminb
+opt$par
+nlmb$par
+# same!
+
+# look at objective function values from optim compared with nlminb
+opt$value
+nlmb$objective
+# same!
+
+# look at convergence criteria
+opt$convergence
+#OK!
+
+# now we can get the standard errors of the parameter estimates
+# from the hessian matrix, as calculated by optim.
+# This is the same approach we used to estimate the 95% confidence
+# limits for our growth curve parameters in the previous workshops.
+# We didn't go into the maths then much, and we won't now!
+(std.err <- sqrt(diag(solve(opt$hessian))))
+
+# Let's store all our results - parameter estimates and 95% confidence limits
+
+# first, the "point estimates" for our growth parameters
+(Est.L50 <- opt$par[1])
+(Est.lnslope <- opt$par[2])
+(Est.slope <- exp(opt$par[2]))
+
+# now get approximate 95% confidence limits for the 
+# parameter estimates
+(Est.L50.Low95CL <- Est.L50 - 1.96 * std.err[1])
+(Est.L50.Up95CL <- Est.L50 + 1.96 * std.err[1])
+(Est.slope.Low95CL <- exp(Est.lnslope - 1.96 * std.err[2]))
+(Est.slope.Up95CL <- exp(Est.lnslope + 1.96 * std.err[2]))
+
+# what's the L95? (that the biologists like? - the length at which 95% of fish
+# reach maturity?) 
+# As this parameter, together with the L50, are easier
+# to visualise than L50 and slope, it may be useful to calculate it.
+
+# However, what's the error for this? Well, if we want it, this requires a 
+# bit more work.
+# The point estimate for L95 is:
+(Est.L95 = (log(19)/Est.slope) + Est.L50)
+
+# let's try out this new curve, using the estimated value for L50, and calculated value for
+# L95, based on the L50 and slope in our original formula, from above
+L50 <- Est.L50
+L95 <- Est.L95
+
+# now calculate the probability of maturity for specified lengths, using our new
+# logistic equation with L50 and L95 as our parameters.
+# Note, using the L50 and L95 with this equation gives the same line as if using
+# the previous maturity equation with L50 and slope (they are mathematically equivalent)
+ProbOfMaturity <- 1 / (1 + exp(-log(19) * (xVals - L50) / (L95 - L50)))
+
+# plot it!
+plot(xVals,PropMat,"o",xlab="length",ylab="prop mature",frame.plot=F, 
+     xlim=c(0,MaxLen),ylim=c(0,1))
+arrows(xVals[Positions],PropMat_Low95CL[Positions], 
+       xVals[Positions], PropMat_Up95CL[Positions], 
+       code=3, angle=90,length=0.02, col='black')
+lines(xVals,ProbOfMaturity, type="o",col="blue")
+# so yep, same curve as before, but now we want the error associated with
+# L50. 
+
+# Let's use this new formula for describing maturity at length, in our function
+# to calculate the negative log-likelihood.
+
+# We'll make the order of our parameters as params[1] = L50, and params[2] = L95
+Calc.NLL.for.maturity <- function(params) {
+  
+  Likelihood <- rep(-999,nobs)
+  
+  # get expected lengths for each cohort, and overall
+  ProbOfMaturity <- 1 / (1 + exp(- log(19) * (MatDat$ObsLen - params[1]) / (params[2] - params[1])))
+  
+  Likelihood[which(MatDat$ObsMatCat==1)] <- ProbOfMaturity[which(MatDat$ObsMatCat==1)] 
+  Likelihood[which(MatDat$ObsMatCat==0)] <- 1 - ProbOfMaturity[which(MatDat$ObsMatCat==0)] 
+  
+  LL <- log(Likelihood + 1E-4)
+  
+  # calculate the negative log-likelihood
+  NLL = -sum(LL)
+  
+  # set function result to NLL
+  results <- NLL
+  
+  return(results) 
+  
+}
+
+# Let's test it out
+
+# define starting values of the parameters to be estimated
+(params = c(Est.L50,Est.L95))
+
+# checking that the function works and returns a value for the objective function
+test.function <- Calc.NLL.for.maturity(params); test.function
+# Yep, OK.
+
+# So, to get the error, we now feed in, from nlminb, our best estimates
+# for L50 and L95 into optim (which has the Hessian matrix)
+# required to calculate our 95% confidence limits.
+opt <- optim(par=params,fn=Calc.NLL.for.maturity,method="Nelder-Mead",hessian=TRUE)
+
+# look at parameter estimates from optim and compared with nlminb
+opt$par
+(std.err <- sqrt(diag(solve(opt$hessian))))
+
+# Let's store all our results - parameter estimates and 95% confidence limits
+
+# first, the "point estimates" for our growth parameters
+(Est.L50 <- opt$par[1])
+(Est.L95 <- opt$par[2])
+
+# now get approximate 95% confidence limits for the 
+# parameter estimates
+(Est.L50.Low95CL <- Est.L50 - 1.96 * std.err[1])
+(Est.L50.Up95CL <- Est.L50 + 1.96 * std.err[1])
+(Est.L95.Low95CL <- Est.L95 - 1.96 * std.err[2])
+(Est.L95.Up95CL <- Est.L95 + 1.96 * std.err[2])
+
+# Great, we have what we want. But you might be wondering, why didn't we just
+# use the second formula (which the biologists want), rather that muck around 
+# another equation with the slope parameter?
+# Good question! The answer is, the original formula is a bit more "robust".
+# When optimising, the algorithm searches for the combination of parameter values
+# that gives the lowest value of, in this case, the negative log-likelihood. 
+# When using the second formuala, we get a problem if the L95 value is ever
+# equal to or below the L50 value. Let's see what happens
+L50 <- 300
+L95 <- 250
+ProbOfMaturity <- 1 / (1 + exp(-log(19) * (xVals - L50) / (L95 - L50)))
+plot(xVals,ProbOfMaturity,"o",xlab="length",ylab="prop mature",frame.plot=F, 
+     xlim=c(0,MaxLen),ylim=c(0,1))
+
+# So, if L95 goes below L50, the curves gone the other way - this will certainly cause problems 
+# when optimising! There is never this particular problem when using the formula containing
+# the slope and L50. So, that's a reason for the extra mucking around - we're
+# trying to avoid potential problems that could occur with some data sets! Another reason is that
+# there is likely to be a high level of correlation between the two parameters
+# L50 and L95 - if one goes up, the other is likely to go up - which can make optimisation harder.
+# In contrast, the L50 and slope parameters are likely to be far less correlated (that is, whether the
+# L50 goes up or down, the slope isn't likely to do the same all the time)
+
+# So, that's it. Of course, we could use alternative methods for estimating the
+# error, such as bootstrapping, which would allow us to estimate also the variation
+# around the fitted curve, not just the parameters. For another day!
+
+# Why not try this out on another "real" data set. Alternatively, we could now also
+# use essentially the same method to estimate age at maturity parameters. This
+# can sometimes be a bit more problematic than length! But, why not give it a go
+
+
+```
+<br><br>
+
+# Bootstrapping and Monte Carlo methods

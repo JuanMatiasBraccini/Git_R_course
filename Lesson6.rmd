@@ -1,0 +1,84 @@
+---
+title: "Lesson 6. Functions"
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "C:/Matias/Cursos/2019_Mexico/htmls") })
+
+output: 
+  html_document:
+    code_folding: show
+    highlight: haddock
+    keep_md: yes
+    theme: united
+---
+
+<style type="text/css">
+h1.title {
+  font-size: 30px;
+    color: Maroon;
+  text-align: center;
+          }
+h3.subtitle {
+  font-size: 22px;
+    color: Maroon;
+  text-align: center;
+            }
+h4.author { 
+    font-size: 24px;
+      color: FireBrick;
+  text-align: center;
+          }
+h4.date { 
+  font-size: 18px;
+  text-align: center;
+        }
+h1{
+  font-size: 22px;
+  color: DarkBlue;
+  }
+h2{
+  font-size: 20px;
+  color: Blue;
+  }
+h3{
+  font-size: 18px;
+  color: SteelBlue;
+  }
+body{
+    font-family: Helvetica;
+    font-size: 14pt;
+    }
+code.r{
+  font-size: 16pt;
+      }
+pre {
+  font-size: 16pt;
+}
+</style>
+
+
+```{r globaloptions, include=FALSE}
+knitr::opts_chunk$set(fig.width = 6,fig.height = 6,
+                        echo = TRUE, warning=FALSE,message=FALSE)
+```
+
+# Lesson goals
+We're going to learn how to create and use functions
+
+<br>
+Credits to John Hoenig, Ainslie Denham and Alex Hesp
+<br><br>
+
+
+
+
+# we could also pass in our numbers in as a vector. We need to 
+# modify our function slightly first.
+AddTwoNumbers <- function(Numbers) {
+  result <- Numbers[1] + Numbers[2]
+  return(result) 
+}
+
+# specify numbers and get the result
+Numbers <- c(3,9)
+(GetTheResults <- AddTwoNumbers(Numbers))
+# yep, still works.
