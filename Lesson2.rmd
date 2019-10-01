@@ -1,5 +1,5 @@
 ---
-title: "Lesson 2. Data frames, summary statistics, plotting of frequency data"
+title: "Lesson 2. R basics ...continued"
 knit: (function(inputFile, encoding) {
   rmarkdown::render(inputFile, encoding = encoding, output_dir = "C:/Matias/Cursos/2019_Mexico/htmls") })
 
@@ -64,6 +64,10 @@ knitr::opts_chunk$set(fig.width = 6,fig.height = 6,
 # Lesson goals
 We're going to create data frames and do some plotting.
 
+<br>
+Credits to Ainslie Denham and Alex Hesp
+<br><br> 
+ 
 ```{r }
 #make sure to start with a clean slate, with no junk in memory 
 rm(list=ls())
