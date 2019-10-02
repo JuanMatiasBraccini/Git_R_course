@@ -68,3 +68,6 @@ We're going to expand on doing beautiful plots and maps.
 Credits to John Hoenig, Ainslie Denham and Alex Hesp
 <br><br>
 
+https://cran.r-project.org/web/packages/tmap/vignettes/tmap-getstarted.html
+
+also consider mapview package for interactive maps

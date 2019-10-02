@@ -66,12 +66,9 @@ all scripts stored in
 
 https://github.com/JuanMatiasBraccini/Git_R_course
 
-all data, presentations and htmls stored in
-
-https://www.dropbox.com/home/R_course_Mazatlan_2019
 
 <br>
-Credits to Ainslie Denham and Alex Hesp
+Credits to Ainslie Denham, Alex Hesp and John Hoenig
 <br><br>
 
 # Introduction to R and Rstudio
@@ -453,6 +450,49 @@ Mat%*%vec #matrix multiplication,
 #i.e. firt row= 1*0.5 + 2*2
 #     second row= 1*0.5 + 5*2
 
+# Overview of matrix operations in R:
+#  Syntax          Operation
+#  *, +, -, /      elementwise multiplication, addition, etc
+#  %*%             matrix multiplication
+#  t(A)            transpose of A
+#  crossprod(A,B)  equivalent to t(A)%*%B
+#  solve(A,b)      solve the linear system of equations Ax = b
+#  solve(A)        find the inverse of the matrix A
+#  chol(A)         Cholesky decomposition of A
+#  qr(A)           QR decomposiiont of A
+#  svd(A)          singular value decomposition of A
+#  eigen(A)        eigen decomposition of A
+#  kronecker(A,B)  Kronecker product of A & B
+#  diag(b)         create a diagonal matrix from the vector b
+#  diag(A)         extract the diagonal elements of A
+
+b = c(1,2,3) # create a vector
+diag(b)      # create a diagonal matrix
+
+A = matrix(1:9,nrow=3)
+A
+diag(A)      # extract the diagonal elements of matrix A
+t(A)         # take the transpose of A
+
+# an important note about subsetting matrices: 
+# if you extract one column or one row of a matrix
+# the default is for R to make it into a vector.
+A
+A[,1]
+# You can keep the result as a matrix by using the drop=F
+# option as follows:
+A[,1,drop=F]
+# This is important because if you want to do matrix 
+# multiplication you might need the vector to be in
+# the right matrix form.
+
+# solve the system of equations:
+# 2 = 3y + 2z
+# 1 = 2y + 4z
+(b = c(2,1))
+(A = matrix(c(3,2,2,4),nrow=2,byrow=T))
+solve(A,b)
+# we see that y = .75 and z = -.125
 ```
 
 

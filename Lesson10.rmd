@@ -63,8 +63,9 @@ knitr::opts_chunk$set(fig.width = 6,fig.height = 6,
 # Lesson goals
 We're going to a range of other R related concepts and applications:
 * Directories and file paths
-* Vectorization
+* Vectorization (add purr package, function map, apply equivalent of tidyverse)
 * Version control and Rmarkdown
+* Building websites  (shiny, blogdown package) 
 
 <br>
 Credits to John Hoenig, Ainslie Denham and Alex Hesp
@@ -84,8 +85,13 @@ Credits to John Hoenig, Ainslie Denham and Alex Hesp
 
 <br><br>
 
+package here for managing paths and wd
+https://malco.io/2018/11/05/why-should-i-use-the-here-package/
+
 
 # Version control and Rmarkdown
+
+add reference manager, equations, etc
 
 What problems can you see with the following approach to version control?
 

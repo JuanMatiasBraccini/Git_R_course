@@ -68,6 +68,8 @@ We're going to manipulate data, i.e. clean it, reshape it, aggregate, use loops,
 Credits to John Hoenig, Ainslie Denham and Alex Hesp
 <br><br>
 
+tidyverse cheat sheet
+https://rstudio.com/resources/cheatsheets/
 
 # First, make sure we start with a clean slate, with no junk in memory (as could occur if we
 # had run something previously in another R file). After running this, there should be nothing
