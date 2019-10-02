@@ -395,7 +395,6 @@ which(month.name=="April")  # vector already defined in R
 
 <br><br>
 
-
 ## Wrap up exercise
 1. Create a vector containing the numbers 1 to 10 
 2. Create a second vector containing the numbers 1 to 5
@@ -407,35 +406,6 @@ which(month.name=="April")  # vector already defined in R
 
 
 <br><br>
-
-
-## Solution
-```{r}
-#1
-NumberVector1 <- 1:10
-NumberVector1
-#2
-NumberVector2 <- 1:5
-NumberVector2
-#3
-NumberVector3 <- c(NumberVector1,NumberVector2)
-NumberVector3
-#4
-(NumberVector3+5)*6 -> NumberVector4  #either way works...
-NumberVector4
-#5
-summary(NumberVector4)
-#6
-id=which(NumberVector4>60)
-id
-NumberVector4[id]
-#7
-sum(NumberVector4[id]-10)
-```
-
-
-<br><br>
-
 
 # Matrices
 All elements have same mode in matrices (e.g. all numeric)

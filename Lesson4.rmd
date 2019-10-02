@@ -326,40 +326,6 @@ legend('topleft',c("binary data","binomial"),lty=1,col=1:2,bty='n')
 
 <br><br>
 
-## Solution
-```{r}
-#Solution
-# 1. Read in "Lesson4_exercise1.csv" 
-Dat=read.csv("C:/Matias/Cursos/2019_Mexico/Data.sets/Lesson4_exercise1.csv")
-
-# 2. Fit logistic model
-Model1 <- glm(Mature~Length,family=binomial,data=Dat)
-
-# 3. Extract summary, and % deviance explained (this  
-#     is (null.deviance-model deviance)/null.deviance
-  #summary
-summary(Model1)
-  
-  #Percentage deviance explained by model
-100*(Model1$null.deviance-Model1$deviance)/Model1$null.deviance
-
-# 4. Get model predictions for the size range 100:200
-Pred.size=100:200
-predictions.SE = predict(Model1,newdata=list(Length=Pred.size),
-                         type="r",se.fit = TRUE)
-
-# 5. Plot predictions and 95% confidence 
-#     intervals (as a blue filled polygon)
-Upper.95=predictions.SE$fit+1.96*predictions.SE$se.fit
-Lower.95=predictions.SE$fit-1.96*predictions.SE$se.fit
-
-plot(Pred.size,predictions.SE$fit,type='l',
-     ylab="Proportion",xlab="Lengt")
-polygon(c(Pred.size,rev(Pred.size)),
-        c(Lower.95,rev(Upper.95)),col=rgb(.1,.1,1,alpha=.2))
-```
-
-<br>
 
 ## Model selection
 There are cases where we have multiple *potential* predictors (i.e. model terms) and we want to find out which of those are effecting our response variable.
@@ -882,7 +848,8 @@ nlmb
 #  log-transform a logged value, it can't be negative. 
 
 # So, modify our function for calculating the NLL
-Calc.NLL.for.maturity <- function(params) {
+Calc.NLL.for.maturity <- function(params)
+  {
   
   L50 <- params[1] # this one seems OK, so leave as is.
   slope <- exp(params[2]) # we back log-transform here,
@@ -927,25 +894,34 @@ nlmb <- nlminb(params, Calc.NLL.for.maturity,
                gradient = NULL, 
                hessian = TRUE, 
                control=list(trace=1))
+#Look at the second column, this is the gradient descent,
+#i.e. the value of the neg. loglike. at different values of
+# the estimable parameters. 
+# This should go down.... (we are minimising the neg. loglike)
+# Gradient descent is an iterative method. 
+# We start with some set of values for our model parameters,
+# and improve them slowly.
+
 nlmb
-#DEJE ACA
+
 nlmb$par[1] # L50
 nlmb$par[2] # ln of slope
 
 # store the parameter estimates from nlminb
 Est.L50 = nlmb$par[1]; Est.L50
 Est.slope = exp(nlmb$par[2]); Est.slope 
-# values are same as before, but this is a slightly more robust way of
-# fitting.
+# values are same as before, but this is a slightly 
+# more robust way offitting.
 
 
-
-# Biologists often like to use a slightly different parameterisation of 
-# the logistic equation, containing an "L50" (as we have done already - 
-# describing the length at which 50% of fish are mature), and an L95 
-# describing the length at which 95% of fish are mature), rather than a slope
-# which is harder to visualise. We can get the L95 value from our original
-# equation using this formula, if we want it
+# Biologists often like to use a slightly different 
+#  parameterisation of  the logistic equation, 
+#  containing an "L50" and an "L95", describing the length
+#  at which 95% of fish are mature), rather than a slope
+#  which is harder to visualise. 
+# 
+# We can get the L95 value from our original equation using
+#  this formula, if we want it
 Est.L95 = (log(19)/Est.slope) + Est.L50; Est.L95
 
 # calculate expected maturity at length
@@ -956,47 +932,42 @@ Est.L95 = (log(19)/Est.slope) + Est.L50; Est.L95
 # the equations give the same result.
 
 # plot expected curve over observed data
-plot(xVals,PropMat,"o",xlab="length",ylab="prop mature",frame.plot=F, 
-     xlim=c(0,MaxLen),ylim=c(0,1))
+plot(xVals,PropMat,"o",xlab="length",ylab="prop mature",
+     frame.plot=F,xlim=c(0,MaxLen),ylim=c(0,1))
 arrows(xVals[Positions],PropMat_Low95CL[Positions], 
        xVals[Positions], PropMat_Up95CL[Positions], 
        code=3, angle=90,length=0.02, col='black')
 text(LenCats+40,PropMat+0.03,cex=0.6,pos=1,labels=nObsInLenCat)
 lines(xVals,ExpPropMat, type="o",col="orange")
 
-# So it fits pretty well throughout most of the range of data, except for the
-# low end, where there are very few data anyway. If we were to calcualte
-# confidence limits around the actual curve, they would be broad at particularly
-# the lower end, given lack of data/information for small fish. 
+# So it fits pretty well throughout most of the range of data, except 
+#  for the low end, where there are very few data anyway. 
+#  If we were to calcualte confidence limits around the actual curve,
+#  they would be broad at particularly the lower end, given 
+#  lack of data/information for small fish. 
 
-# We could also plot this way. Note that the bars span over the specified
-# length increment, whereas the estimated maturity values correspond
-# to a particular length. Noting that the method used actually fits
-# to data for individual fish, not proportions at length, to visualise
-# results, arguably, it makes some sense to plot the expected maturity curve
-# over the mid points of the bars (or as in the way we did above). Make sure 
-# that the curve does not "slip" to the left or right, by corresponding to either the lower or
-# upper boundary of the length classes - this will look very wrong!
+# We could also plot this way. 
 df.bar <- barplot(PropMat,names.arg = LenCats,ylim=c(0,1.2),
                   las=1,cex.axis=0.8,cex=0.8,col="white",
                   ylab="Prop. Mature",xlab="Length, mm")
 lines(x = df.bar, y = ExpPropMat,col="orange","o",pch=16)
 text(df.bar,PropMat+0.2,cex=0.6,pos=1,labels=nObsInLenCat)
 
-# OK, so now, we need estimates of uncertainty for our estimated parameter
-# values. Let's get these from optim, by providing it the estimates 
-# of our parameters produced by nlminb
-# so, what's the parameter estimates?
-nlmb$par
-nlmb$par[1] # L50
-nlmb$par[2] # slope (in log space)
+
+# Now, we need estimates of uncertainty for our estimated 
+#  parameter values. 
+# Let's get these from optim, another optimisation method,
+#  by providing it the estimates of our parameters produced 
+#  by nlminb
 
 # set starting values for optim
 params <- c(nlmb$par[1],nlmb$par[2])
 
-# run optim, to get parameter estimates, along with the Hessian matrix
-# required to calculate our 95% confidence limits
-opt <- optim(par=params,fn=Calc.NLL.for.maturity,method="Nelder-Mead",hessian=TRUE)
+# run optim, to get parameter estimates, along with the 
+#  Hessian matrix, which is required to calculate our 
+#  95% confidence limits
+opt <- optim(par=params,fn=Calc.NLL.for.maturity,
+             method="Nelder-Mead",hessian=TRUE)
 
 # look at parameter estimates from optim and compared with nlminb
 opt$par
@@ -1010,73 +981,83 @@ nlmb$objective
 
 # look at convergence criteria
 opt$convergence
+nlmb$convergence
 #OK!
 
 # now we can get the standard errors of the parameter estimates
-# from the hessian matrix, as calculated by optim.
-# This is the same approach we used to estimate the 95% confidence
-# limits for our growth curve parameters in the previous workshops.
-# We didn't go into the maths then much, and we won't now!
+# from the Hessian matrix, as calculated by optim.
+
+#Standard error of parameters
 (std.err <- sqrt(diag(solve(opt$hessian))))
 
-# Let's store all our results - parameter estimates and 95% confidence limits
+# Let's store all our results - parameter estimates and 95% CL
 
-# first, the "point estimates" for our growth parameters
+# first, the "point estimates" 
 (Est.L50 <- opt$par[1])
 (Est.lnslope <- opt$par[2])
 (Est.slope <- exp(opt$par[2]))
 
-# now get approximate 95% confidence limits for the 
-# parameter estimates
+# now get approximate 95% confidence limits 
 (Est.L50.Low95CL <- Est.L50 - 1.96 * std.err[1])
 (Est.L50.Up95CL <- Est.L50 + 1.96 * std.err[1])
 (Est.slope.Low95CL <- exp(Est.lnslope - 1.96 * std.err[2]))
 (Est.slope.Up95CL <- exp(Est.lnslope + 1.96 * std.err[2]))
 
-# what's the L95? (that the biologists like? - the length at which 95% of fish
-# reach maturity?) 
-# As this parameter, together with the L50, are easier
+
+# As the L95, together with the L50, are easier
 # to visualise than L50 and slope, it may be useful to calculate it.
 
-# However, what's the error for this? Well, if we want it, this requires a 
-# bit more work.
+# However, what's the error for this? Well.., if we want it,
+# this requires a bit more work (fit a new curve...).
+
 # The point estimate for L95 is:
 (Est.L95 = (log(19)/Est.slope) + Est.L50)
 
-# let's try out this new curve, using the estimated value for L50, and calculated value for
-# L95, based on the L50 and slope in our original formula, from above
+# let's try out this new curve, using the estimated value for L50,
+#  and calculated value for L95, based on the L50 and slope 
+#  in our original formula, from above
 L50 <- Est.L50
 L95 <- Est.L95
+```
 
-# now calculate the probability of maturity for specified lengths, using our new
-# logistic equation with L50 and L95 as our parameters.
-# Note, using the L50 and L95 with this equation gives the same line as if using
-# the previous maturity equation with L50 and slope (they are mathematically equivalent)
+Now calculate the probability of maturity for specified lengths,using this equation:
+$$P(mature)=\frac{1}{1+e^{(-log(19)\frac{(Length-L50)}{(L95-L50)})}}$$
+
+```{r}
+# Note, using the L50 and L95 with this equation gives the same
+#   line as if using the previous maturity equation with L50 
+#   and slope (they are mathematically equivalent)
 ProbOfMaturity <- 1 / (1 + exp(-log(19) * (xVals - L50) / (L95 - L50)))
 
 # plot it!
-plot(xVals,PropMat,"o",xlab="length",ylab="prop mature",frame.plot=F, 
-     xlim=c(0,MaxLen),ylim=c(0,1))
+  #data
+plot(xVals,PropMat,"o",xlab="length",ylab="prop mature",
+     frame.plot=F,xlim=c(0,MaxLen),ylim=c(0,1))
 arrows(xVals[Positions],PropMat_Low95CL[Positions], 
        xVals[Positions], PropMat_Up95CL[Positions], 
        code=3, angle=90,length=0.02, col='black')
+  #prediction
 lines(xVals,ProbOfMaturity, type="o",col="blue")
-# so yep, same curve as before, but now we want the error associated with
-# L50. 
 
-# Let's use this new formula for describing maturity at length, in our function
-# to calculate the negative log-likelihood.
+# Let's use this new formula for describing maturity at length,
+#  in our function to calculate the negative log-likelihood.
 
-# We'll make the order of our parameters as params[1] = L50, and params[2] = L95
-Calc.NLL.for.maturity <- function(params) {
+# We'll make the order of our parameters as 
+# params[1] = L50
+# params[2] = L95
+Calc.NLL.for.maturity <- function(params)
+{
   
   Likelihood <- rep(-999,nobs)
   
   # get expected lengths for each cohort, and overall
-  ProbOfMaturity <- 1 / (1 + exp(- log(19) * (MatDat$ObsLen - params[1]) / (params[2] - params[1])))
+  ProbOfMaturity <-1/(1+exp(-log(19)*(MatDat$ObsLen-params[1])/
+                              (params[2]-params[1])))
   
-  Likelihood[which(MatDat$ObsMatCat==1)] <- ProbOfMaturity[which(MatDat$ObsMatCat==1)] 
-  Likelihood[which(MatDat$ObsMatCat==0)] <- 1 - ProbOfMaturity[which(MatDat$ObsMatCat==0)] 
+  Likelihood[which(MatDat$ObsMatCat==1)] <-
+    ProbOfMaturity[which(MatDat$ObsMatCat==1)] 
+  Likelihood[which(MatDat$ObsMatCat==0)] <-
+    1 - ProbOfMaturity[which(MatDat$ObsMatCat==0)] 
   
   LL <- log(Likelihood + 1E-4)
   
@@ -1095,20 +1076,22 @@ Calc.NLL.for.maturity <- function(params) {
 # define starting values of the parameters to be estimated
 (params = c(Est.L50,Est.L95))
 
-# checking that the function works and returns a value for the objective function
+# checking that the function works and returns a value for 
+# the objective function
 test.function <- Calc.NLL.for.maturity(params); test.function
 # Yep, OK.
 
-# So, to get the error, we now feed in, from nlminb, our best estimates
-# for L50 and L95 into optim (which has the Hessian matrix)
+# So, to get the error, we now feed in, from nlminb, our best 
+# estimates for L50 and L95 into optim (which has the Hessian matrix)
 # required to calculate our 95% confidence limits.
-opt <- optim(par=params,fn=Calc.NLL.for.maturity,method="Nelder-Mead",hessian=TRUE)
+opt <- optim(par=params,fn=Calc.NLL.for.maturity,
+             method="Nelder-Mead",hessian=TRUE)
 
 # look at parameter estimates from optim and compared with nlminb
 opt$par
 (std.err <- sqrt(diag(solve(opt$hessian))))
 
-# Let's store all our results - parameter estimates and 95% confidence limits
+# Let's store all our results - parameter estimates and 95% CL
 
 # first, the "point estimates" for our growth parameters
 (Est.L50 <- opt$par[1])
@@ -1121,12 +1104,15 @@ opt$par
 (Est.L95.Low95CL <- Est.L95 - 1.96 * std.err[2])
 (Est.L95.Up95CL <- Est.L95 + 1.96 * std.err[2])
 
-# Great, we have what we want. But you might be wondering, why didn't we just
-# use the second formula (which the biologists want), rather that muck around 
-# another equation with the slope parameter?
-# Good question! The answer is, the original formula is a bit more "robust".
-# When optimising, the algorithm searches for the combination of parameter values
-# that gives the lowest value of, in this case, the negative log-likelihood. 
+# Great, we have what we want. But you might be wondering, 
+#   why didn't we just use the second formula (which the 
+#   biologists want), rather that muck around another 
+#   equation with the slope parameter?
+# Good question! 
+# The answer is, the original formula is a bit more "robust".
+# When optimising, the algorithm searches for the combination
+#  of parameter values that gives the lowest value of, in this case,
+#  the negative log-likelihood. 
 # When using the second formuala, we get a problem if the L95 value is ever
 # equal to or below the L50 value. Let's see what happens
 L50 <- 300
@@ -1135,25 +1121,21 @@ ProbOfMaturity <- 1 / (1 + exp(-log(19) * (xVals - L50) / (L95 - L50)))
 plot(xVals,ProbOfMaturity,"o",xlab="length",ylab="prop mature",frame.plot=F, 
      xlim=c(0,MaxLen),ylim=c(0,1))
 
-# So, if L95 goes below L50, the curves gone the other way - this will certainly cause problems 
-# when optimising! There is never this particular problem when using the formula containing
-# the slope and L50. So, that's a reason for the extra mucking around - we're
-# trying to avoid potential problems that could occur with some data sets! Another reason is that
-# there is likely to be a high level of correlation between the two parameters
-# L50 and L95 - if one goes up, the other is likely to go up - which can make optimisation harder.
-# In contrast, the L50 and slope parameters are likely to be far less correlated (that is, whether the
-# L50 goes up or down, the slope isn't likely to do the same all the time)
+# So, if L95 goes below L50, the curves gone the other way - this will 
+#  certainly cause problems when optimising! 
+# There is never this particular problem when using the formula containing
+# the slope and L50. 
 
-# So, that's it. Of course, we could use alternative methods for estimating the
+# We could use alternative methods for estimating the
 # error, such as bootstrapping, which would allow us to estimate also the variation
-# around the fitted curve, not just the parameters. For another day!
-
-# Why not try this out on another "real" data set. Alternatively, we could now also
-# use essentially the same method to estimate age at maturity parameters. This
-# can sometimes be a bit more problematic than length! But, why not give it a go
-
-
+# around the fitted curve, not just the parameters. see next....
 ```
+## Wrap up exercise
+1. Read in "Lesson4_exercise1.csv" 
+2. Fit logistic (L50 and L95 version) model using maximum likelihood
+3. Calculate 95% confidence limits
+
+
 <br><br>
 
 # Bootstrapping and Monte Carlo methods
