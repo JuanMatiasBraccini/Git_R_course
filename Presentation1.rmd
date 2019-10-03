@@ -47,12 +47,11 @@ the active memory of the computer in the form of objects which have a name
 ## What we will do this week
 - R basics (Lessons 1 and 2)
 - General statistics (Lessons 3 and 4)
-- Data manipulations (Lesson 5)
-- Functions (Lesson 6)
-- Plotting and Mapping (Lesson 7)
-- Multivariate stats (Lesson 8)
-- Population dynamics (Lesson 9)
-- Other bits and pieces (Lesson 10)
+- Data manipulation, loops and functions (Lesson 5)
+- Plotting and Mapping (Lesson 6)
+- Multivariate stats (Lesson 7)
+- Population dynamics (Lesson 8)
+- Other bits and pieces (Lesson 9)
 
 
 ## Let's get started.......

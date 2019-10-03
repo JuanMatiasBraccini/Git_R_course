@@ -473,7 +473,6 @@ anova(example6,example5)
 
 ## Two-way anova
 ```{r}
-###############################
 #1. generate data for 2-way anova by creating vector of temperature treatments
 temp = rep(c("low","high"),10)
 temp    # note: this is a character vector, not a factor vector
@@ -584,34 +583,6 @@ anova(example5,example7,example8)
 3. Look at outputs 
 4. Extract anova table (which model terms are significant?)
 
-
-<br>
-
-## Solution
-```{r}
-#1. read in data
-hndl='C:/Matias/Cursos/2019_Mexico/Data.sets/'
-thedata=read.csv(paste(hndl,'Lesson3_linear.model.exercise.csv',sep=''))
-
-
-#2. fit linear model
-Mod1=lm(Response ~ Pred1 + Pred2+Pred3+Factor1,data=thedata) 
-
-
-#3. Look at outputs
-summary(Mod1)
-
-#4. Extract anova table
-AOV=anova(Mod1)
-AOV
-
-#Original parameter values
-# b0 = 5      intercept            
-# b1 = 3      slope Pred1           
-#b2 = -.5     slope Pred2           
-
-
-```
 
 <br><br>
 
@@ -817,54 +788,3 @@ confint(len.wt.reg)
 2. Plot the data
 3. Fit non linear model
 4. Compare model predictions
-
-
-<br>
-
-## Solution
-```{r}
-#1. read in data
-dat1=read.csv(paste(hndl,'Lesson3_non.linear.model.exercise.csv',
-                    sep=''))
-dat2=read.csv(paste(hndl,'Lesson3_non.linear.model.exercise2.csv',
-                    sep=''))
-
-
-#2. Plot the data
-plot(dat1$Age,dat1$Length)
-plot(dat2$Age,dat2$Length)
-
-
-#3. fit non linear model
-mod1 = nls(Length~Linf*(1-exp(-k*(Age-to))),
-           data=dat1,
-           start=list(Linf=240,k=.2,to=-3))
-mod2 = nls(Length~Linf*(1-exp(-k*(Age-to))),
-           data=dat2,
-           start=list(Linf=240,k=.2,to=-3))
-  
-
-#4. Compare model predictions 
-par(mfcol=c(2,1),mar=c(4,4,1,1),mgp=c(2,.7,0))
-plot(dat1$Age,dat1$Length,ylim=c(0,400),ylab="Length",xlab="Age")
-
-Linf=coef(mod1)[1]   
-k = coef(mod1)[2]
-to = coef(mod1)[3]
-curve(Linf*(1-exp(-k*(x-to))),0,400,add=T,col=3)
-
-plot(dat2$Age,dat2$Length,ylim=c(0,400),ylab="Length",xlab="Age")
-Linf=coef(mod1)[1]   
-k = coef(mod1)[2]
-to = coef(mod1)[3]
-curve(Linf*(1-exp(-k*(x-to))),0,400,add=T,col=3)
-
-
-summary(mod1)
-summary(mod2)
-
-#Original parameter values
-# Linf=250
-# k=0.3
-# to=-1
-```

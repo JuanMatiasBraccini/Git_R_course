@@ -1,5 +1,5 @@
 ---
-title: "Lesson 5. Data manipulations"
+title: "Lesson 5. Data manipulation, loops and functions"
 knit: (function(inputFile, encoding) {
   rmarkdown::render(inputFile, encoding = encoding, output_dir = "C:/Matias/Cursos/2019_Mexico/htmls") })
 
@@ -68,147 +68,180 @@ We're going to manipulate data, i.e. clean it, reshape it, aggregate, use loops,
 Credits to John Hoenig, Ainslie Denham and Alex Hesp
 <br><br>
 
-tidyverse cheat sheet
-https://rstudio.com/resources/cheatsheets/
 
-# First, make sure we start with a clean slate, with no junk in memory (as could occur if we
-# had run something previously in another R file). After running this, there should be nothing
-# in the top right environment window.
+## Data manipulation
+By this I mean  anything that needs to be done to a data set in order to perform a given
+analysis....
+
+```{r}
+# Let's start with a clean slate
 rm(list=ls())
 
-# There is a plotting function, which specifies information regarding number of
-# plots on a page, and how they are positioned, and how much space around each plot. 
-# Here, we are saying 1 plot per page, which is the R default, but if you had other 
-# spreadsheets open without closing R, this may not be set at the default. 
-# More on these functions in the code below.
-# mar= margin
-# mfcol or mfrow specifies in which order you want multiple plots on a page
-par(mfcol=c(1,1),mar=c(4,4,2,2))
-
-# Let's read in some age and length data from a .csv file and have a quick look at it
-LenAgeDat <- read.csv("LenAtAgeData.csv", header = T)
-head(LenAgeDat)
-tail(LenAgeDat)
+# Let's read in some age and length data from a .csv file 
+#   and have a quick look at it
+LenAgeDat <- read.csv(
+  "C:/Matias/Cursos/2019_Mexico/Data.sets/Lesson5_LenAtAgeData.csv",
+  header = T)
+head(LenAgeDat,2)
+tail(LenAgeDat,2)
 
 # what variables/fields do we have?
 names(LenAgeDat)
 
-# What areas are there in the data set? Areas 1 and 2, that's pretty hopeless,
-# should have included a text variable describing where areas 1 and 2 are. But
-# anyhow, let's keep going
+# What areas are there in the data set? 
 unique(LenAgeDat$Area)
 
 # what sexes are there?
 unique(LenAgeDat$SexNameVec)
-
-# Levels in result indicates the structure type (text)is stored as a factor ie. Female=1 , Male =2. Defaults by alphabetical order
+# note: Levels in result indicates the structure type
+# (text)is stored as a factor ie. Female=1 , Male =2.
+# Defaults by alphabetical order
 
 # and there is a corresponding numeric code for sex
 unique(LenAgeDat$SexNumVec)
+# ...seems reasonable, its not like there are 3 or 1, 
+# when we know there should be 2 (females and males)
 
-# seems reasonable, its not like there are 3 or 1, when we know there
-# should be 2 sexes (females and males)
 
 # Let's get a bit of information regarding the age data
 summary(LenAgeDat$ObsAge)
-# OK, a fairly short-lived fish, with maximum age of 10, with some fish caught at one.
+# OK, a fairly short-lived fish, with maximum age of 10, 
+#    with some fish caught at one.
+
+
 
 # Let's store the min and max age
 (MinAge <- min(LenAgeDat$ObsAge))
 (MaxAge <- max(LenAgeDat$ObsAge))
-# remember, if we put brackets around the thing, then it will print out to the console
+# remember, if we put brackets around the thing, 
+#  then it will print out to the console
 
 # we can also get the range this way
 AgeRange <- range(LenAgeDat$ObsAge)
 
-# so we could also store the minimum and maximum ages as variables this way, if we wanted to
+# so we could also store the minimum and maximum ages 
+#   as variables this way, if we wanted to
 (MinAge <- AgeRange[1])
 (MaxAge <- AgeRange[2])
 
-# Let's make a vector containing our age categories, which we can 
-# use later in plotting, for example (to create x axis)
+
+# Let's make a vector containing our age categories,  
+#  which we can use later
 (AgeClasses <- seq(MinAge,MaxAge,1))
 
 # What about length? Let's learn a bit more
 summary(LenAgeDat$ObsLen)
-# up fish gets up to around 350-400 
-# What fish is this mystery fish or invertebrate species?, 
-# maybe a herring or whiting, or an occy or squid - can age these sometimes!
-# Anyway, let's start by focusing on the age data, to produce age frequency
-# plots
+# fish gets up to 346
 
-# so, what would be the age composition fish for females in area 1?
+# So, what would be the age composition fish for females in area 1?
 # We can subset the data for female fish in area 1
-# first subset for area. 
 SubDat <- LenAgeDat[LenAgeDat$Area==1,]
 head(SubDat)
-# so in LenAgeDat[LenAgeDat$Area==1,], we are saying, in the data frame called
-# LenAgeDat, take the rows for which the area column has a value of 1 (it is
-# the row column because its left of the comma in the square brackets). 
-# In other words, think of [row,column] when you're subsetting using square brackets. 
-# Because we've put nothing after the comma in the brackets, we are saying keep all the columns
-# in the original data frame, but subset for specific rows.
-# Then we assign this (i.e. by using <-) to the new variable I called SubDat, so the 
-# subset of data is in memory. By using a different variable name, i.e. Subdata rather
-# than LenAgeDat, we keep the original data unchanged in memory, and have the subset
-# we want in memory under the name SubDat. You can also check this in your environment window.
+# so in LenAgeDat[LenAgeDat$Area==1,], we are saying, in the
+#  data frame called 'LenAgeDat', take the rows for which the 
+#  area column has a value of 1 (it is the row column because its
+#  left of the comma in the square brackets). 
+# In other words, think of [row,column] when you're subsetting 
+#  using square brackets. 
+# Because we've put nothing after the comma in the brackets, 
+#  we are saying keep all the columns in the original data frame,
+#  but subset for specific rows.
+# Then we assign this (i.e. by using <-) to the new object 
+#  called 'SubDat',
 
-# how much data have we got. Looking at the environment window, it says there
-# are 157 observations for SubDat. Let's check it another way
+SubDat1 <- subset(LenAgeDat,Area==1)  #same result...
+head(SubDat1==SubDat)
+
+
+#  VIP: By using a different variable name, i.e. Subdata, rather
+# than LenAgeDat, we keep the original data unchanged in memory
+
+
+# how much data have we got. Looking at the environment window 
+#  (topright),it says there are 157 observations for SubDat. 
+
+# Let's check it another way
 (length(SubDat$ObsAge))
 (length(SubDat$ObsLen))
-# so there are 157 age observations, 157 length observations and so on. If there
-# were different numbers of ages and lengths, that could mean a problem, but OK here
+# so there are 157 age observations, 
+# 157 length observations and so on. 
+# If there were different numbers of ages and lengths, 
+#  that could mean a problem, but OK here
 
-# Generally you can check the number of observations by checking the length of any column,
-# noting there could be some missing entries for some variables you 
 
 # Another way is to check the dataframe "dimensions"
 dim(SubDat)
 # so the data frame has 157 rows and 5 columns
 
+
 # Now, let's subset the data further, for females
 SubDat <- SubDat[SubDat$SexNameVec=="Female",]
-# Here, because I've used the name SubDat on both the left and right of the
-# assingment sign (<-), we overwrite the original subsetted data (containing all
-# data for area 1) with a data frame containing only females in area 1, 
-# Why, because that's what I decided I wanted: a less obtuse answer is that, for my analyses, 
-# what works well is to always keep the original dataframe read in unchanged, subsetting this
-# as required, but not necessarily storing the various data subsets I make after I get what I want
-# from them (otherwise, can be messy)). Note, it is easy to just subset again from the original 
-# dataframe as long as this is never overwritten
+# Here, because I've used the name SubDat on both the left 
+#  and right of the assingment sign (<-), we overwrite 
+#  the original subsetted data (containing all data for 
+#  area 1) with a data frame containing only females in area 1 
 
-# how many observations now? Environment window says its gone down to 75.
+# how many observations now? Environment window says its 
+#  gone down to 75.
 dim(SubDat)
 
-# We could end up with the same result produced by the above two lines of code
-# using this single line of code, by subsetting our original data frame  
-# to contain data for only females in area 1 in a single go,
-SubDat <- LenAgeDat[LenAgeDat$Area==1 & LenAgeDat$SexNameVec=="Female",]
 
-# So here, we've asked to retain only the rows of data for which area = 1 and
-# sex = Females. Either way is fine.
+# We could end up with the same result produced by the 
+#  above two lines of code using this single line of code, 
+#  by subsetting our original data frame to contain data 
+#  for only females in area 1 in a single go,
+SubDat <- LenAgeDat[LenAgeDat$Area==1 & 
+                      LenAgeDat$SexNameVec=="Female",]
+# So here, we've asked to retain only the rows of data for 
+#  which area = 1 and sex = Females. 
 
-# So now, let's look at the age and length composition data for females in area 1 and, 
-# like in the previous session, plot these
+# Either way is fine.
 
-# Let's start with the age data. How many fish do we have for each age?
+
+# Let's look at the age and length composition data for 
+# females in area 1...How many fish do we have for each age?
 table(SubDat$ObsAge)
 
 # Let's use the frequency function to plot it
 AgeCats <- c(0,AgeClasses)
-HistData=hist(SubDat$ObsAge, breaks=AgeClasses, right=FALSE, col="pink", 
-              main="", xlab="Age class", ylab="Frequency",las=1,xlim=c(0,10))
 
-# if we want, we can look at the ages and corresponding frequencies this way
+
+#before plotting...
+# There is a plotting function, which specifies information
+#   regarding number of plots on a page, and how they are 
+#   positioned, and how much space around each plot. 
+# Here, we are saying 2 plots per page
+#?par
+par(mfcol=c(2,1),mar=c(4,4,2,2))
+
+#now plot the histogram
+HistData=hist(SubDat$ObsAge, breaks=AgeClasses, right=FALSE,
+              col="pink", main="", xlab="Age class", 
+              ylab="Frequency",las=1,xlim=c(0,10))
+
+# if we want, we can look at the ages and corresponding 
+#  frequencies this way
 HistData$breaks # ages
 HistData$counts
-# frequencies at corresponding ages (same result as from table function above)
+# frequencies at corresponding ages (same result as from
+#  table function above)
+
 
 # OK, great, what about males in area 1. Let's subset again
-SubDat <- LenAgeDat[LenAgeDat$Area==1 & LenAgeDat$SexNameVec=="Male",]
-HistData=hist(SubDat$ObsAge, breaks=AgeClasses, right=FALSE, col="light blue", 
-              main="", xlab="Age class", ylab="Frequency",las=1,xlim=c(0,10))
+SubDat <- LenAgeDat[LenAgeDat$Area==1 & 
+                      LenAgeDat$SexNameVec=="Male",]
+HistData=hist(SubDat$ObsAge, breaks=AgeClasses, right=FALSE,
+              col="light blue", main="", xlab="Age class",
+              ylab="Frequency",las=1,xlim=c(0,10))
+
+
+
+
+
+
+```
+
+
 
 # OK, great, what about females in area 2. Yeah, it's working, but we seem
 # to be repeating the same code over and over again - tedious!
@@ -1933,6 +1966,9 @@ names(dat)
 
 
 
-##==========================================================================
-## END OF CODE
-##==========================================================================
+
+
+
+tidyverse cheat sheet
+https://rstudio.com/resources/cheatsheets/
+

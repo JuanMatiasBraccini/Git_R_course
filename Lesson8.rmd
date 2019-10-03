@@ -1,5 +1,5 @@
 ---
-title: "Lesson 8. Multivariate stats"
+title: "Lesson 8. Population dynamics"
 knit: (function(inputFile, encoding) {
   rmarkdown::render(inputFile, encoding = encoding, output_dir = "C:/Matias/Cursos/2019_Mexico/htmls") })
 
@@ -62,7 +62,7 @@ knitr::opts_chunk$set(fig.width = 6,fig.height = 6,
 ```
 
 # Lesson goals
-We're going to apply a range of multivariate statistics.
+We're going to develop and fit surplus production and age-structured population dynamics models.
 
 <br>
 Credits to John Hoenig, Ainslie Denham and Alex Hesp
