@@ -77,7 +77,7 @@ Credits to Ainslie Denham, Alex Hesp and John Hoenig
 #calculate mean
 mean(1:10)
 ```
-2.  "R studio" provides an interface for using the program R and it has 4 main panes:
+2.  **Rstudio** provides an interface for using the program R and it has 4 main panes:
 + top left is where you write code (this is where you save your script)
 + below is the console where you see outputs and code that you have run
 + top right window shows info on objects 
@@ -198,7 +198,7 @@ You can use typeof() function to examine vector type
 
 All vectors can be “named” (i.e., name individual elements within vector)
 ```{r}
-y<-c(a="this course sucks",b="this is awesome")
+y<-c(student1="this course sucks",student2="this is awesome")
 y
 ```
 
@@ -326,21 +326,21 @@ rep(1:2, each=2)     #repeat each times
   * rep( )
   
 * Built-in functions
-  * abs( )       **absolute value**
-  * as.matrix()  **coerces a data structure to be a matrix**
-  * cat( )       **print a message**
-  * dim( )       **dimensions**
-  * is.na( )     **logical: returns TRUE/FALSE** 
-  * length( )    **length of a vector (or list)**
-  * matrix( )    **create a matrix**
-  * max( )       **maximum value**
-  * mean( )      **mean value**
-  * min( )       **minimum value**
-  * plot( )      **creates a plot of y vs x**
-  * prod( )      **gives the product of the numbers**
-  * range( )     **minimum and maximum values**
-  * sum( )       **sum of elements**
-  * var( )       **calculates the sample variance**
+  * **abs( )**       absolute value
+  * **as.matrix()**  coerces a data structure to be a matrix
+  * **cat( )**       print a message
+  * **dim( )**       dimensions
+  * **is.na( )**     logical: returns TRUE/FALSE 
+  * **length( )**    length of a vector (or list)
+  * **matrix( )**    create a matrix
+  * **max( )**       maximum value
+  * **mean( )**      mean value
+  * **min( )**       minimum value
+  * **plot( )**      creates a plot of y vs x
+  * **prod( )**      gives the product of the numbers
+  * **range( )**     minimum and maximum values
+  * **sum( )**       sum of elements
+  * **var( )**       calculates the sample variance
 
 ## Cheat sheet
 https://www.rstudio.com/wp-content/uploads/2016/10/r-cheat-sheet-3.pdf

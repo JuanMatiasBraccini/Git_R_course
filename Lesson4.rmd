@@ -230,7 +230,8 @@ predictions.SE = predict(Model1,newdata=list(STL=predictionpoints),
 Upper.95=predictions+1.96*predictions.SE$se.fit
 Lower.95=predictions-1.96*predictions.SE$se.fit
 
-par(mfcol=c(3,1),mar=c(4,4,.1,.1),oma=c(2,2,.1,.1),mgp=c(2,.8,0),cex.lab=1.5)
+par(mfcol=c(3,1),mar=c(4,4,.1,.1),oma=c(2,2,.1,.1),
+    mgp=c(2,.8,0),cex.lab=1.5)   #what is par? type ?par
 plot(predictionpoints,predictions,xlab="",ylab="Proportion mature",
      xlim=c(0,2500),ylim=c(0,1),type='l')
 lines(predictionpoints,Upper.95,col=2)
@@ -773,10 +774,11 @@ LL <- log(Likelihood)
 
 # 5. Specify a "function", which is to be passed to the optimizer, 
 #  along with the starting values of the parameters. 
-# This function needs to calculate, in this case, the probability of fish 
-# being mature, given their associated lengths, and the 
-# negative log-likelihood (objective function value),
-# associated with the data and different sets of maturity parameter values
+# This function needs to calculate, in this case, the probability  
+#  of fish being mature, given their associated lengths, and the 
+#  negative log-likelihood (objective function value),
+#  associated with the data and different sets of maturity
+#  parameter values
 Calc.NLL.for.maturity <- function(params)
 {
   Likelihood <- rep(-999,nobs)
@@ -799,6 +801,19 @@ Calc.NLL.for.maturity <- function(params)
     
  return(results) 
 }
+```
+## by the way.... what is a function???
+* A function is a set of statements organized together to perform a specific task
+* R has a large number of **in-built functions** (e.g. *mean()*) and the user can **create** their own functions.
+
+## Function parts:
+* Function Name − This is the actual name of the function. It is stored in R environment as an object with this name.
+* Arguments − An argument is a placeholder. When a function is invoked, you pass a value to the argument. Arguments are optional; that is, a function may contain no arguments. Also arguments can have default values.
+* Function Body − The function body contains a collection of statements that defines what the function does.
+* Return Value − The return value of a function is the last expression in the function body to be evaluated.
+
+
+```{r}
 
 # 6. Specify starting parameters
 L50 <- 400
@@ -815,7 +830,8 @@ test.function <- Calc.NLL.for.maturity(params); test.function
 #7. Fit the model
 
   #7.1 fit model with nlminb optimizer
-nlmb <- nlminb(params, Calc.NLL.for.maturity, gradient = NULL, hessian = TRUE)
+nlmb <- nlminb(params, Calc.NLL.for.maturity, 
+               gradient = NULL, hessian = TRUE)
 nlmb
 nlmb$par[1]
 nlmb$par[2]
@@ -1113,8 +1129,8 @@ opt$par
 # When optimising, the algorithm searches for the combination
 #  of parameter values that gives the lowest value of, in this case,
 #  the negative log-likelihood. 
-# When using the second formuala, we get a problem if the L95 value is ever
-# equal to or below the L50 value. Let's see what happens
+# When using the second formuala, we get a problem if the L95 value 
+#  is ever equal to or below the L50 value. Let's see what happens
 L50 <- 300
 L95 <- 250
 ProbOfMaturity <- 1 / (1 + exp(-log(19) * (xVals - L50) / (L95 - L50)))
@@ -1123,8 +1139,8 @@ plot(xVals,ProbOfMaturity,"o",xlab="length",ylab="prop mature",frame.plot=F,
 
 # So, if L95 goes below L50, the curves gone the other way - this will 
 #  certainly cause problems when optimising! 
-# There is never this particular problem when using the formula containing
-# the slope and L50. 
+# There is never this particular problem when using the formula 
+#  containing the slope and L50. 
 
 # We could use alternative methods for estimating the
 # error, such as bootstrapping, which would allow us to estimate also the variation

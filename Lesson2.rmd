@@ -83,12 +83,14 @@ plot(x=ObsAge,y=ObsLen)
 plot(ObsAge,ObsLen)   #same
 
 #let's improve the plot (use additional arguments, type ?plot)
-plot(ObsAge,ObsLen,frame.plot=F,cex=0.6,pch=16)
+plot(ObsAge,ObsLen,frame.plot=F,cex=.8,pch=16)
 
 # what other symbol types are there? type ?pch
 
 # redraw & change axis labels, increase point size, change color
-plot(ObsAge, ObsLen, frame.plot=F, cex=2, pch=16, ylab="Total length, mm", xlab="Age class, y",col="steelblue",cex.axis=1.25,cex.lab=1.5)
+plot(ObsAge, ObsLen, frame.plot=F, cex=2, pch=16, 
+     ylab="Total length, mm",xlab="Age class, y",
+     col="steelblue",cex.axis=1.25,cex.lab=1.5)
 ```
 <br> <br>
 some R color options
@@ -98,11 +100,14 @@ http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf
 # redraw and change the range for the x and y axes
 max(ObsLen)
 max(ObsAge)
-plot(ObsAge, ObsLen, frame.plot=F, cex=2, pch=16, ylab="Total length, mm", xlab="Age class, y",col="steelblue",cex.axis=1.25,cex.lab=1.5,
+plot(ObsAge, ObsLen, frame.plot=F, cex=2, pch=16, ylab="Total length, mm",
+     xlab="Age class, y",col="steelblue",cex.axis=1.25,cex.lab=1.5,
      xlim=c(0,20), ylim=c(0,400))
 
 #be a bit smarter with axis limits...also change axis orientation
-plot(ObsAge, ObsLen, frame.plot=F, cex=2, pch=16, ylab="Total length, mm", xlab="Age class, y",col="steelblue",cex.axis=1.25,cex.lab=1.5,las=1,
+plot(ObsAge, ObsLen, frame.plot=F, cex=2, pch=16, 
+     ylab="Total length, mm", xlab="Age class, y",col="steelblue",
+     cex.axis=1.25,cex.lab=1.5,las=1,
      xlim=c(min(ObsAge),max(ObsAge)), ylim=c(min(ObsLen),max(ObsLen)))
 
 #Exercise: try las =0, =1, =2, =3
@@ -110,7 +115,7 @@ plot(ObsAge, ObsLen, frame.plot=F, cex=2, pch=16, ylab="Total length, mm", xlab=
 #           try changing colors (points, axis, labels etc)
 
 ```
-
+<br>
 ## Introducing data frames
 + An excel spreadsheet often contains multiple columns and rows of data.
 + We can store our data this way in R (but better...)
@@ -168,14 +173,17 @@ FishDat[RowForFish3,]
 FishDat$ObsLen[RowForFish3]=original
 FishDat[RowForFish3,]
 #plot data using the data frame
-plot(FishDat$ObsAge, FishDat$ObsLen, frame.plot=F, cex=2, pch=16, ylab="Total length, mm", xlab="Age class, y",col="steelblue",cex.axis=1.25,cex.lab=1.5,las=1,
+plot(FishDat$ObsAge, FishDat$ObsLen, frame.plot=F, cex=2, pch=16, 
+     ylab="Total length, mm", xlab="Age class, y",col="steelblue",
+     cex.axis=1.25,cex.lab=1.5,las=1,
      xlim=c(min(ObsAge),max(ObsAge)), ylim=c(min(ObsLen),max(ObsLen)))
 
 ```
-
+<br>
 ## Some more coding & how to calculate & plot frequency distributions
 ```{r }
-dummy=round(rnorm(1000,50,10)) #first create some dummy length data                       (don't worry about these functions for the moment)
+dummy=round(rnorm(1000,50,10)) #first create some dummy length data 
+#                 (don't worry about these functions for the moment)
 LenFreq <- table(dummy) #create a table of age observations
 plot(LenFreq)   # Let's plot it
 plot(LenFreq,type="o", pch=16, lwd=0.8,las=1,
@@ -183,8 +191,10 @@ plot(LenFreq,type="o", pch=16, lwd=0.8,las=1,
 barplot(LenFreq,xlab="Length class",ylab="Frequency",las=1) # same
 
 # let's change the colour
-barplot(LenFreq,xlab="Length class",ylab="Frequency", col="light blue",las=1)
-barplot(LenFreq,xlab="Length class",ylab="Frequency", col=rainbow(length(LenFreq)), las=1)
+barplot(LenFreq,xlab="Length class",ylab="Frequency", col="light blue",
+        las=1)
+barplot(LenFreq,xlab="Length class",ylab="Frequency", 
+        col=rainbow(length(LenFreq)), las=1)
 
 #create different length categories
 sort(unique(dummy))
@@ -201,11 +211,14 @@ table(cut(x=dummy, breaks=LenCats))
 #it has changed, because the right cut-offs have changed
 
 # To plot, we can use the hist() function
-hist(dummy, breaks=LenCats, right=FALSE, col="light blue", main="", xlab="10 mm Length category", ylab="Frequency",las=1)
+hist(dummy, breaks=LenCats, right=FALSE, col="light blue", main="",
+     xlab="10 mm Length category", ylab="Frequency",las=1)
 ```
 ```{r }
 # We can use hist() to create the table (set it equal to a new object)
-HistData=hist(dummy, breaks=LenCats, right=FALSE, col="light blue", main="", xlab="10 mm Length category", ylab="Frequency",las=1)
+HistData=hist(dummy, breaks=LenCats, right=FALSE, col="light blue",
+              main="", xlab="10 mm Length category", 
+              ylab="Frequency",las=1)
 HistData$breaks  #can acces the histogram
 HistData$counts
 
