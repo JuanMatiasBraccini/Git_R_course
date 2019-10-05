@@ -1574,3 +1574,372 @@ names(dat)
 tidyverse cheat sheet
 https://rstudio.com/resources/cheatsheets/
 
+
+#Base times and dates
+silly.dates <- c("12/22/2003","02/06/2005","04/08/2005")
+silly.dates       # these are just character strings
+
+silly.dates2 <- c("12/22/03","02/06/05","04/08/05")
+silly.dates2 
+
+# the function strptime() strips a date out of a character string by assuming 
+# the date is encoded according to the format you specify in "quotes". The %
+# sign preceeds a single letter code for what variable is next and then after
+# that is whatever else will occur in the character string before the next time
+# variable. 
+
+dates = strptime(silly.dates2,format="%m/%d/%y")  
+dates
+   
+strptime(silly.dates,format="%m/%d/%y")   # whooops! It's putting a 2020 at the
+                                          # start of each date!
+
+# we need to tell strptime the correct format: the year is abbreviated to two
+# digits. Use %Y, NOT %y (see table in Crawley's blue book (The R Book))   
+strptime(silly.dates,format="%m/%d/%Y")
+
+# Of course, getting the dates into R is just the first step. We may very well
+# want to extract the year, month and day. This can be done with the substr()
+# function as follows:
+
+dates
+years = substr(dates, 1,4)    # characters 1 to 4 of dates
+years
+months = substr(dates, 6,7)   # characters 6 to 7 of dates
+months
+days = substr(dates,9,10)
+days 
+
+# now let's read in a text file with dates and other data. Here, the dates & 
+# time are in 7 separate columns
+
+d <- read.csv(paste(hndl,"Lesson5_temp-time.csv",sep=""),header=T)
+d
+attach(d)
+dim(d)
+# The data set consists of several columns indicating time and one response 
+# variable, temperature. 
+
+# We need to write time so that it can be handled by R.
+
+# First let's join together in the proper format the hours, minutes and seconds
+time.of.day <- (paste(hour,min,sec,sep=":"))
+time.of.day
+# Now let's add the time zone (separated by a space)
+time.of.day.VA <- paste(time.of.day,meridian,sep=" ")
+time.of.day.VA
+# The date gets formed by grouping together year, month and day in that order, 
+# separated by a dash.
+day.of.year <- paste(year,month,day,sep="-")
+day.of.year
+date.complete <- paste(day.of.year,time.of.day.VA,sep=" ")
+date.complete
+
+# There are two basic classes for date and time
+# POSIXct gives you the number of seconds passed since Jan1, 1970 (Think ct =
+#     cumulative time)
+# POSIXlt gives you dates in a form that can be broken down (using the unclass()
+#     function) into a list of vectors representing sec, min,hrs,day,month,year
+#     (Think lt = list of time elements)
+# year is scored as number of years since 1900 so that 2008 gets a score of 108
+# mday = day number within the month
+# mon is the month but January is scored as zero, so September is 8 not 9
+# wday is the day of the week starting with Sunday with a score of 0
+# yday is the day of the year starting with January 1 with a score of 0
+# isdst returns whether daylight savings time is in operation
+
+# POSIXlt function
+date.complete
+date1lt <- as.POSIXlt(date.complete)
+date1lt            # note the very slight difference between date.complete and
+                   # date1lt
+unclass(date1lt)
+unlist(unclass(date1lt)) # The output of the function unlist is not very 
+                         # attractive.  It is very difficult to read it.
+                         # However, it might be useful if we are interested in 
+                         # looking at one particular observation. 
+unlist(unclass(date1lt[5]))    # this is a vector representing all the
+                               # information for the 5th record
+is.vector(unlist(unclass(date1lt[5])))
+
+unclass(date1lt[5])            # this is a list
+is.list(unclass(date1lt[5]))
+
+# POSIXct function
+date1ct <- as.POSIXct(date.complete)
+date1ct
+unclass(date1ct)
+unclass(date1ct[5])
+
+###############################################################################
+#Calculations with dates and times
+#
+# R will allow you to do some operations with time.  You can do addition and
+# substraction of two times.  You can also add or substract a constant, 
+# multiply or divide by a constant.
+# However, multiplication of two times, power, log, etc. are not possible.  
+# In order to do them, you need to reverse the time to numeric using the 
+# as.numeric function.
+# Logical operations such as <=, =>, etc. are also possible with time.
+
+
+# How many shoppings days are left until Christmas?
+Christmas <- as.POSIXlt("2008-12-25")
+Christmas
+today <- as.POSIXlt("2008-11-24")  # of course, you'd substitute the date you're
+                                   # doing this to find out how many days YOU
+                                   # have left until Christmas!
+today
+Shopping.days <-Christmas-today
+Shopping.days
+# How many days until Boxing day?
+Shopping.days + 1
+
+# We can do the following arithmetic with dates:
+#   time + number
+#   time - number
+#   time1 - time2 (or time2 - time1)
+#   time1 'logical operation' time2
+#     where logical operation can be ==, !=, <, <=, etc.
+
+# Suppose we're really interested in the log of number of days until Christmas
+log(Shopping.days)
+num.days <- as.numeric(Shopping.days)
+num.days
+log(num.days)
+# The same operations can be done with POSIXct
+Christmas <- as.POSIXct("2008-12-25")
+Christmas
+today <- as.POSIXct("2008-11-19")
+today
+Christmas-today
+
+# How many seconds until the end of class?
+z1 <-as.POSIXlt("2008-11-24 16:20:00")    # you'll want to update the time!
+z1
+z2<- as.POSIXlt(Sys.time())
+z2
+z1 - z2
+number.sec <- round(as.numeric((z1-z2)*3600 ),digits=0)
+cat(paste("There are ",number.sec," seconds until the end of class","\n"))
+
+# Use of the difftime function
+# If J.S.Bach was alive today, how many days old would he be?
+difftime("2008-11-19","1685-03-31")
+age.Bach <- round(as.numeric(difftime( "2008-11-18","1685-03-31"), digits=0))
+age.Bach
+
+# How long have we been sitting in this class already?
+difftime( Sys.time(), "2008-11-24 15:00:00")
+
+
+
+
+#Lubridate tutorial
+source:
+https://rpubs.com/mr148/303800
+library(lubridate)
+
+df <- data.frame(Date = c("10/9/2009 0:00:00", "10/15/2009 0:00:00"))
+ as.Date(df$Date, "%m/%d/%Y %H:%M:%S")
+
+mytime<-ymd_hms("2015-08-14-05-30-00", tz="America/Halifax")
+mytime
+
+#get just the date part
+date(mytime)
+
+#Check for Time Intervals
+date1<-ymd_hms("2017-06-20-03-45-23")
+date2<-ymd_hms("2017-10-07-21-02-19")
+difftime(date2,date1)
+
+#get current date or time
+lubridate::today()  #why the 'lubridate::' bit?
+                    # this tells to use the function today()
+                    # from the lubridate package
+base::date()
+Sys.Date()
+Sys.timezone()
+now()
+
+#Extract day,month,year from date
+year=year(today())
+month=month(today())
+day=day(today())
+cbind.data.frame(year,month,day)
+
+
+#extract hour and minutes
+mytime
+hour(mytime)
+minute(mytime)
+
+
+#Conditions and program flow
+# CONDITIONALS
+
+decision <- T
+
+if (decision==T) cat("\n\nRochelle is a GREAT professor")
+if (decision) cat("\n\nRochelle is a GREAT professor")
+
+if (decision==F) cat("\n\nRochelle is a GREAT professor")
+if (!decision) cat("\n\nRochelle is a GREAT professor")
+
+# We can include multiple statements in an if() construct if we enclose them
+# in braces {  }.  Also, we can nest if statements
+
+decision <- 1
+if(decision==1){
+  junk <- 14
+  for (i in 1:5) {
+    cat("\n")
+    cat("\n\nRochelle is a GREAT professor")
+  }
+} else {
+    A <- "Oh"
+    B <- " wow!"
+    Sorry <- ", Rom owes me $10"
+    cat("\n",A,B,Sorry)
+}
+       # In case you're wondering, Rochelle and Rom are married and they are
+       # both my colleagues and my good friends. But, Rom and I always tease 
+       # each other by insulting each other. So, when they both audited my R
+       # course I couldn't resist giving Rom a hard time.
+       
+decision <- 2
+
+if(decision==1){
+  junk <- 14
+  for (i in 1:5) {
+    cat("\n")
+    cat("\n\nRochelle is a GREAT professor")
+  }
+} else {
+    A <- "boo"
+    B <- " hoo"
+    Sorry <- ", Rom"
+    cat("\n",A,B,Sorry,"\n")
+}
+
+#
+# There's also a function ifelse(test,ifyes,ifno)
+values = c(3,1,5,6,2,7,5)
+sex = ifelse(values <= 4,"F","M") # if values is < or = to 4, sex is assigned 
+                                  # "F"; otherwise it is assigned "M"
+sex
+
+################################################################################
+# Let's contrast several ways of controlling program flow: for, while and repeat
+
+# calculate x! = x(x-1)(x-2)...(2)(1)
+# NOTE: 1! = 1
+# NOTE: 0! = 1
+
+fac1 <- function(x){
+  f <- 1
+  if(x<2) return(1)
+  for (i in 2:x) {
+    f <- f*i
+  }
+  return(f)
+}
+
+fac1(3)
+sapply(0:5,fac1) # don't worry about the sapply function. Just accept (for now)
+                 # that it will apply the function fac1 to each of the numbers
+                 # in the sequence 0, 1, 2, 3, 4, and 5. We use it here to test
+                 # out our function fac1
+
+fac2 <- function(x) {
+  f <- 1
+  t <- x
+  while(t>1) {
+    f <- f*t
+    t <- t-1
+  }
+  return(f)
+}
+
+fac2(3)
+sapply(0:5,fac2)
+
+fac3 <- function(x) {
+  f <- 1
+  t <- x
+  repeat{
+    if (t<2) break
+    f <- f*t
+    t <- t-1
+  }
+  return(f)
+}
+
+fac3(3)
+sapply(0:5,fac3)
+
+cumprod(1:5)
+cumprod(0:5)
+
+fac4 <- function(x) max(cumprod(1:x))
+
+fac4(3)
+fac4(1)
+fac4(0)
+
+
+
+# Apply family
+source:
+https://www.datacamp.com/community/tutorials/r-tutorial-apply-family
+
+Overall, the apply function is a wrapper of looping
+The apply() functions form the basis of more complex combinations and helps to perform operations with very few lines of code. More specifically, the family is made up of the apply(), lapply() , sapply(), vapply(), mapply(), rapply(), and tapply() functions.
+```{r}
+#1. apply
+#  construct a 5x6 matrix
+ X <- matrix(rnorm(30), nrow=5, ncol=6)
+
+# sum the values of each column with `apply()`
+apply(X, 2, sum)
+
+#2. lapply
+#used for applying a given function to every element of a list and obtain a list as a result
+# create a list of matrices
+ MyList <- list(A=matrix(rnorm(10), nrow=5, ncol=2),
+                B=matrix(rnorm(10,5,1), nrow=5, ncol=2),
+                C=matrix(rnorm(10,100,10), nrow=5, ncol=2))
+ MyList
+ 
+# extract the 2nd column from `MyList` with the selection operator `[` with `lapply()`
+lapply(MyList,"[", , 2)
+
+# extract the 1st row from `MyList`
+lapply(MyList,"[", 1, )
+
+# extract first row and second column
+lapply(MyList,"[", 1, 2)
+
+#3. sapply
+# a simplified version of lapply
+  #this returns a list
+lapply(MyList,"[", 2, 1 ) 
+
+  #this returns a vector
+sapply(MyList,"[", 2, 1 ) 
+
+#4. mapply
+# stands for ‘multivariate’ apply; it applies a Function to 
+# Multiple List or multiple Vector Arguments (e.g. a matrix)
+
+Q1 <- matrix(c(rep(1, 4), rep(2, 4), rep(3, 4), rep(4, 4)),4,4)
+Q1
+
+Q2 <- mapply(rep,1:4,4)
+Q2
+
+```
+
+
+

@@ -64,7 +64,658 @@ knitr::opts_chunk$set(fig.width = 6,fig.height = 6,
 # Lesson goals
 We're going to develop and fit surplus production and age-structured population dynamics models.
 
-<br>
-Credits to John Hoenig, Ainslie Denham and Alex Hesp
+# Surplus production
+
+Residual errors are assumed to be log-normally distributed so the corresponding negative log-likelihood
+of the data is given by
+$$l(I_t|\theta)=ln(\sigma)+\frac{1}{2}\ln(2\pi)+\frac{(ln(I_t)-ln(\hat{I}_t))^2}{\sigma^2}$$
+where $I_t$ is the observed CPUE, $\hat{I}_t$ is the CPUE predicted by the model and $\sigma^2$ is the unknown variance of the observation or process error.
+
+Given initial estimates for the unknown parameters $\theta=(r,k,\sigma^2,q)$, one can estimate
+this unknown parameters by minimizing the negative log-likelihood
+
+```{r}
+#DATA SECTION
+hake=read.table("C:/Matias/Cursos/2019_Mexico/Data.sets/Lesson8_Hake data.txt",header=T)
+#Data obtained from Hilborn and Mangel (1997). Namibian Hake...
+
+ct = hake$Catch/1000
+cpue=hake$CPUE
+year=hake$Year
+iyr=cbind(year,year+0.2,year+0.4,year+0.55,year+0.65)
+L = 3
+
+#PARAMETER SECTION
+theta=c(log.k=log(2.9),log.r=log(0.38),log.q=log(0.35),tau=7)
+
+#PROCEDURE SECTION
+M1=function(theta)
+{
+  with(as.list(theta),{
+    bt=vector()
+    k=exp(log.k); r=exp(log.r); q=exp(log.q)	#k, r and q in log space so thet cannot go negative when estimated by Optim
+    bt[1]=k; n=length(ct)	
+    for(i in 1:n)
+    {
+      bt[i+1]=bt[i]+r*bt[i]*(1-bt[i]/k)-ct[i]		#recursive loop to estimate biomass
+    }
+    epsilon=log(cpue)-log(q*bt[1:n])
+    nloglike= -sum(dnorm(epsilon,0,1/tau,log=T))	#robust Optim. SD=1/tau, tau is precission, this avoids having a negative SD
+    return(list(bt=bt,epsilon=epsilon,nloglike=nloglike,
+                par=c(k=k,r=r,q=q,sig=1/tau)))		#par is the vector of parameters in the untransformed state
+  })
+}
+
+#function prototypes
+fn1 = function(theta)		M1(theta)$nloglike
+
+
+#optimizations
+f1 = optim(theta,fn1,method="BFGS",hessian=T)
+
+
+#Compare parameter estimates
+print(round(M1(f1$par)$par,2))
+
+
+#Plot the residuals between the predicted and observed CPUE’s for each model
+epsilon=cbind(M1(f1$par)$epsilon)
+matplot(iyr[,1:1],epsilon,type="h",xlab="Year",ylab="Residuals")
+legend("topright",paste("std for M",1:1," = ",round(sd(epsilon),2),sep=""),bty="n",lty=1,col=1)
+
+
+#MISSING: show catch, biomass, MSY, etc etc cpue fit
+```
+
 <br><br>
 
+# Age-structured model
+```{r}
+#--- DATA SECTION ---#
+Data=read.csv("C:/Matias/Cursos/2019_Mexico/Data.sets/Lesson8_whiskery.csv")
+Catch.fem=Data$Catch_Female
+Catch.male=Data$Catch_Male
+CPUE=Data$CPUE
+
+Year=Data$Year
+
+#plot data
+par(mfcol=c(4,1),mai=c(.4,.8,.1,.1))
+plot(Year,Catch.fem,type='o',lwd=1.5,col='pink')
+plot(Year,Catch.male,type='o',lwd=1.5,col='blue')
+plot(Year,CPUE,type='o',lwd=1.5)
+
+# #Plot catch and cpue in same graph
+plot(Year,Catch.fem,ann='F',col=1,type='b',pch=19)
+mtext("Catch",side=2,line=4,las=3)
+par(new=T)
+plot(Year,CPUE,col=2,type='b',axes=F,ann='F',pch=19)
+axis(4,at=pretty(CPUE.1),labels=pretty(CPUE.1))
+mtext("CPUE",side=4,line=3,las=3)
+mtext("Year",side=1,line=2)
+legend('topright',c('catch','cpue'),bty='n',lty=1,pch=19,col=1:2)
+
+
+
+#--- PARAMETERS SECTION ---#
+
+#1.Input parameters
+
+#1.1 life history
+max.age=15      
+age=0:max.age
+age.13=match(13,age)
+Linf.fem=120.7;Linf.male=121.5
+K.fem=0.369;K.male=0.423
+to.fem=-0.544;to.male=-0.472
+
+b.male=b.fem=8.891  #TL-FL
+a.male=a.fem=1.046
+
+bwt.male=bwt.fem=0.0000163  #TL=Twt
+awt.male=awt.fem=2.733
+
+M=0.27
+
+fec=19          #mean fecundity
+breed.freq=0.5  #female produce litter every  2nd year (Simpfendorfer & Unsworth 1998)
+sex.ratio=0.5
+age.mat=6
+
+#1.2 fishing
+alpha=64.01339  #gillnet selectivity
+beta=18.53164
+alphabeta=1186.273
+
+Yr.q.change=1982  #assumed year when targeting practices changed
+Ref.pt=40         # limit reference point (40% virgin biomass)
+
+
+
+#1.3. data fitting
+early.var=0.029613
+late.var=0.023525
+
+range.1=match(Year[1]:Yr.q.change,Year)
+n.1=length(range.1)
+range.2=match((Yr.q.change+1):Year[length(Year)],Year)
+n.2=length(range.2)
+n.total=n.1+n.2
+
+#1.4. number of fitted years and length classes
+n.years=length(Year)
+n.age=length(age)
+
+
+#2. Estimabe parameters                 
+# Initial param values
+# R.star=211898.62 #recruitment at virgin conditions
+# z=0.3854804       #steepness (how much is Rec reduced at 20% virgin stock biomass)
+# q.first=1.664e-06
+# q.sec=8.246e-07
+# Fo=0.0102473  #fishing prior to 1975
+# 
+# R.star=R.star*1e-5   #put pars in same order of magnitude
+# z=z*1e+1
+# q.first=q.first*1e+6
+# q.sec=q.sec*1e+7
+# Fo=Fo*1e+2
+
+R.star=21.189862 #recruitment at virgin conditions
+z=0.3854804       #steepness (how much is Rec reduced at 20% virgin stock biomass)
+q.first=1.664
+q.sec=0.8246
+Fo=0.0102473  #fishing prior to 1975
+pars=c(R.star=R.star,z=z,q.first=q.first,q.sec=q.sec,Fo=Fo) #pars in normal space but same order magnitude
+# pars=log(c(R.star=R.star,z=z,q.first=q.first,q.sec=q.sec,Fo=Fo))    
+# inv.logit=exp(Fo)/(1+exp(Fo)) and use logit(inv.logit) inside function
+
+
+#3. Define objects to fill in
+N.male=matrix(nrow=n.years,ncol=n.age)
+colnames(N.male)=age
+B.male=N.fem=B.fem=C.male=C.fem=C.male.wt=C.fem.wt=N.male
+C=REC=EGGS=f=B=B.mat=B.exp=vector(length=n.years)
+No.male=No.fem=Per.recruit=N.1975.male=N.1975.fem=vector(length=n.age) 
+
+
+
+#--- PRELIMINARY CALCULATIONS SECTION ---#
+
+#1. Calculate relationships
+#1.1. length at age
+FL.male=Linf.male*(1-exp(-K.male*(age-to.male)))
+FL.fem=Linf.fem*(1-exp(-K.fem*(age-to.fem)))  
+TL.male=b.male+a.male*FL.male
+TL.fem=b.fem+a.fem*FL.fem
+
+mid.FL.male=Linf.male*(1-exp(-K.male*(age+0.5-to.male)))
+mid.FL.fem=Linf.fem*(1-exp(-K.fem*(age+0.5-to.fem)))
+mid.TL.male=b.male+a.male*mid.FL.male
+mid.TL.fem=b.fem+a.fem*mid.FL.fem
+
+#1.2. weight at length
+mid.Wt.male=ifelse(age<=13,bwt.male*mid.TL.male^awt.male,0)
+mid.Wt.fem=bwt.fem*mid.TL.fem^awt.fem
+
+#1.3. selectivity at length
+sel.male=ifelse(age<=13,((mid.FL.male*10/alphabeta)^alpha)*(exp(alpha-(mid.FL.male*10/beta))),0)
+sel.fem=((mid.FL.fem*10/alphabeta)^alpha)*(exp(alpha-(mid.FL.fem*10/beta)))
+
+#1.4. fecundity
+#note: this also includes proportion mature
+fecundity=ifelse(age>=age.mat,fec*breed.freq,0)
+
+
+
+
+###########################################################################
+###   WHISKERY SHARK STOCK ASSESSMENT MODEL (SIMPFENDORFER ET AL 2000)  ###
+###########################################################################
+
+#notes: . This script performs the whiskery shark stock assessment using the model developed by
+#           Simpfendorfer et al 2000.
+#       . Age and sex structured model
+#       . Model conditioned on catch so TC = Catch
+#       . Start of fishery: longline gear in the 1940s
+#       . Change to gillnet in the 1970s with drastic effort increase
+#       . Catch and effort series start in 1975
+#       . Change in fishing patterns in the mid 1980s: from targeting whiskery to targeting dusky sharks due to
+#           decrease in whiskery shark cpue (modelled through 2 different catchabililties). Hence, introduction of 
+#           management plan (limited entry, effort controls and gear restrictions).
+#       . Limit reference points (set in 1995):  Bt=0.4Bo by 2010-11     (has this been achieved?)
+#       . Regulation by time-gear units
+#       . Fishing year starts in June
+
+
+setwd("C:/Matias/Data/Population dynamics")
+rm(list=ls(all=TRUE))
+
+
+library(Biobase)  #for rowMedians function
+library(miscTools) #for colMedians function
+library(matrixStats) #for colQuantiles function
+library(optimx)   #for optimisation 
+library(mvtnorm)  		#for multivariate normal pdf
+library(timeSeries) #for colQuantiles
+require(MCMCpack)
+library(coda)
+
+
+#--- PROCEDURE SECTION ---#
+
+#2. Population dynamics
+stock.ass=function(pars)                                    
+{
+  PARS=pars
+  R.star=PARS[1]*1e+4
+  z=PARS[2]
+  q.first=PARS[3]*1e-6;q.sec=PARS[4]*1e-6
+  Fo=PARS[5]
+  
+  
+  # 1. Virgin conditions  
+  #numbers
+  No.male[1]=R.star*sex.ratio     
+  for(v in 2:n.age) No.male[v]=No.male[v-1]*exp(-M)
+  No.male[age.13]=No.male[age.13]/(1-exp(-M))   #plus group      
+  #No.male[age.13]=No.male[age.13]/M   #incorrect parametrisation used in spreadsheet model
+  No.male[(age.13+1):n.age]=0
+  
+  No.fem[1]=R.star*sex.ratio     
+  for(v in 2:n.age) No.fem[v]=No.fem[v-1]*exp(-M)
+  No.fem[n.age]=No.fem[n.age]/(1-exp(-M))
+  #No.fem[n.age]=No.fem[n.age]/M    #incorrect parametrisation used in spreadsheet model 
+  
+  #eggs
+  egg.o=No.fem*fecundity #at age
+  Egg.o=sum(egg.o)  #all 
+  
+  
+  # 2. Initial state 
+  #note: this accounts for impact of fishing from 1940 to 1974
+  
+  #penalty to avoid Fo<0    
+  minF=0.001 #minimum accepted exploitation rate
+  pen=0
+  pen=sum((Fo<minF)*100*(Fo-minF)^2)
+  
+  #n per recruit
+  Per.recruit[1]=1
+  for(p in 2:n.age) Per.recruit[p]=Per.recruit[p-1]*exp(-(M+Fo))
+  Per.recruit[n.age]=Per.recruit[n.age]/(1-exp(-M-Fo)) #plus group      
+  #Per.recruit[n.age]=Per.recruit[n.age]/(M+Fo)  #incorrect parametrisation used in spreadsheet model     
+  
+  #eggs per recruit
+  egg.per.rec.exploit=Per.recruit*fecundity*sex.ratio
+  Egg.per.rec=sum(egg.per.rec.exploit)  #X0 in Simpfendorfer's notation
+  
+  
+  #penalty for z<Z.max (Simpfendorfer 2000)
+  z.max=Egg.o/(4*R.star+Egg.o) #maximimum possible z
+  pen=pen+sum((z>z.max)*10*(z-z.max)^2)
+  
+  #penalty for z<Z.min (Simpfendorfer 2000)
+  z.min=0.205
+  pen=pen+sum((z<z.min)*10*(z-z.min)^2)
+  
+  
+  #initial recruitment
+  #note: R.star sets the scale of initial recruitment  
+  a=Egg.o/R.star*(1-(z-0.2)/(0.8*z))
+  b=(z-0.2)/(0.8*z*R.star)
+  Rec.pre.fishing=(Egg.per.rec-a)/(b*Egg.per.rec)   #Rec.pre.fishing = R0 in Simpfendorfer's notation
+  
+  #numbers 1975 
+  N.1975.male[1]=Rec.pre.fishing*sex.ratio
+  for(n in 2:n.age) N.1975.male[n]=N.1975.male[n-1]*exp(-(M+Fo))
+  N.1975.male[age.13]=N.1975.male[age.13]/(1-exp(-M-Fo)) #plus group      
+  #N.1975.male[age.13]=N.1975.male[age.13]/(M+Fo) #incorrect parametrisation used in spreadsheet model      
+  N.1975.male[(age.13+1):n.age]=0  
+  
+  N.1975.fem[1]=Rec.pre.fishing*sex.ratio
+  for(n in 2:n.age) N.1975.fem[n]=N.1975.fem[n-1]*exp(-(M+Fo))
+  N.1975.fem[n.age]=N.1975.fem[n.age]/(1-exp(-M-Fo))
+  #N.1975.fem[n.age]=N.1975.fem[n.age]/(M+Fo)  #incorrect parametrisation used in spreadsheet model 
+  
+  # store quantities
+  Bo=sum(mid.Wt.male*No.male+mid.Wt.fem*No.fem)
+  Bo.exp=sum(mid.Wt.male*No.male*sel.male+mid.Wt.fem*No.fem*sel.fem)
+  B.1975=sum(mid.Wt.male*N.1975.male+mid.Wt.fem*N.1975.fem)
+  Bo.mature=sum(ifelse(age>=age.mat,mid.Wt.fem*No.fem,0))
+  
+  
+  # 3. Post 1974  
+  for (i in 1:n.years)
+  {
+    #fill in numbers
+    if(Year[i]==1975) 
+    {
+      N.fem[i,]=N.1975.fem
+      N.male[i,]=N.1975.male
+    }else
+    {
+      for(j in 2:(n.age-1)) N.fem[i,j]=(N.fem[i-1,j-1]-C.fem[i-1,j-1])*exp(-M)      
+      for(j in n.age) N.fem[i,j]=(N.fem[i-1,j-1]-C.fem[i-1,j-1]+N.fem[i-1,j]-C.fem[i-1,j])*exp(-M)            
+      
+      for(j in 2:(n.age-(1+2))) N.male[i,j]=(N.male[i-1,j-1]-C.male[i-1,j-1])*exp(-M)      
+      for(j in n.age-2) N.male[i,j]=(N.male[i-1,j-1]-C.male[i-1,j-1]+N.male[i-1,j]-C.male[i-1,j])*exp(-M)
+      N.male[i,(age.13+1):n.age]=0    #set males age 14 and 15 to 0
+    }
+    
+    #eggs
+    EGGS[i]=sum(N.fem[i,]*fecundity,na.rm=T)
+    
+    #recruitment
+    REC[i]=EGGS[i]/(a+b*EGGS[i])
+    N.male[i,1]=(1-sex.ratio)*REC[i]
+    N.fem[i,1]=(1-sex.ratio)*REC[i]
+    
+    #total biomass    
+    B[i]=sum(N.fem[i,]*mid.Wt.fem)+sum(N.male[i,]*mid.Wt.male,na.rm=T)
+    
+    #mature female biomass
+    B.mat[i]=sum(ifelse(age>=age.mat,N.fem[i,]*mid.Wt.fem,0))
+    
+    #exploitable biomass
+    B.exp[i]=sum(N.fem[i,]*mid.Wt.fem*sel.fem)+sum(N.male[i,]*mid.Wt.male*sel.male,na.rm=T)
+    
+    #fishing mortality
+    f[i]=ifelse(Catch[i]>=B.exp[i],1,Catch[i]/B.exp[i])   #set f to 1 if catch>biomass
+    
+    #predicted catch (numbers)
+    C.fem[i,]=N.fem[i,]*f[i]*sel.fem
+    C.male[i,]=N.male[i,]*f[i]*sel.male
+    
+    #predicted catch (weight)
+    C.fem.wt[i,]=C.fem[i,]*mid.Wt.fem
+    C.male.wt[i,]=C.male[i,]*mid.Wt.male
+  }
+  
+  # total catch (weight)
+  TC=rowSums(C.fem.wt)+rowSums(C.male.wt,na.rm=T)  
+  
+  
+  # Observation model
+  cpue.pred=ifelse(Year<=Yr.q.change,q.first*B.exp,q.sec*B.exp) #use different catchabilities according to period
+  
+  #penalty to avoid cpue.pred<0    
+  min.cpue=0.001 #minimum cpue
+  pen=pen+sum((cpue.pred<min.cpue)*.1*(cpue.pred-min.cpue)^2)
+  
+  
+  # Objective function
+  residual=log(cpue.pred+0.000001)-log(CPUE+0.000001)
+  var.1=var(residual[range.1])
+  var.2=var(residual[range.2])
+  #   var.2=var(residual)     #second part only
+  correct.res=ifelse(Year<=Yr.q.change,residual/(var.1)^0.5,residual/(var.2)^0.5)
+  #  correct.res=residual/(var.2)^0.5   #second part only
+  
+  #  ssq=sum((correct.res)^2)     #original model
+  ssq=sum((residual)^2)         #current, assuming single variance and uncorrected res
+  d.f.=n.years-length(pars)-1
+  resid.vars=ssq/d.f.
+  
+  # Penalised log Likelihoods
+  #  Log.Like=-0.5*(n.years)*(log(2*pi)+log(resid.vars)+1)+100*pen  #neg log like 
+  
+  # Penalised neg log Likelihoods
+  Log.Like=-(-0.5*(n.years)*(log(2*pi)+log(resid.vars)+1)-100*pen)  #neg log like 
+  
+  if(is.na(Log.Like)) Log.Like=1e3    #Penalty. Setting neg log like very high if getting NA values (when biomass is negative)
+  
+  return=list(Bo=Bo,Bo.exp=Bo.exp,Bo.mature=Bo.mature,B=B,B.MAT=B.mat,B.EXP=B.exp,
+              cpue=cpue.pred,TC=TC,LL=Log.Like,residual=residual,std.res=correct.res)
+}
+
+
+
+#--- MAIN SECTION ---#
+
+#1. MLE
+#Param estimation
+Catch=Catch.1   #re set catch to original data after doing the simulation testing
+metodos=c("Nelder-Mead","BFGS","CG", "L-BFGS-B", "SANN")
+CPUE=CPUE.1   #re set to observed cpue
+fn_obj=function(pars)stock.ass(pars)$LL  #objfun to MAXIMIZE 
+MLE.1=optim(pars,fn_obj,control=list(fnscale=1,trace=T,maxit=5000),hessian=T) #default method is Nelder-Mead algorithm
+MLE=optim(MLE.1$par,method=metodos[2],fn_obj,control=list(fnscale=1,trace=T,maxit=5000),hessian=T)
+
+
+#Error estimation 
+v_ob=solve(MLE$hessian)  #variance covariance matrix 
+std_ob=sqrt(diag(v_ob))
+CV=100*std_ob/MLE$par
+R_ob=v_ob/(std_ob%o%std_ob)		#correlation
+
+
+#Calculate dynamics using MLE
+est.dynamics=stock.ass(MLE$par)
+
+
+
+#2. Goodness of fit (e.g. page 120 O'Neill et al 2005)
+par(mfcol=c(2,2),las=1,mai=c(0.7,0.7,0.01,0.01), omi=c(0.10,0.1,0.10,.05),mgp=c(2,0.7,0))
+
+#predicted and observed cpue
+plot(Year,CPUE.1,col="red",ylab="cpue (units?)",xlab="year",ylim=c(0,5),pch=19)
+lines(Year,est.dynamics$cpue,col="blue")
+points(Year,est.dynamics$cpue,col="blue",pch=19)
+legend("bottomleft",c("observed", "predicted"),lty=c(0,1),bty="n",col=c("red","blue"),cex=1,pch=19)
+title('Observed vs Predicted cpue',line = -0.8,cex.main =1)
+
+#standardised residuals
+#histogram of standardised residuals
+hist(est.dynamics$std.res,breaks=25, xlim=c(-3,3),col="gray", ylab="Frequency", 
+     xlab="Standardised residuals",main="")
+title("Standardised residuals",line = -0.8,cex.main =1.05)
+box()
+
+#predicted cpue vs standardised residuals
+plot(est.dynamics$cpue,est.dynamics$std.res, xlab="Predicted cpue", ylab="Standardised residuals",
+     ylim=c(-3,3))
+abline(0,0)
+title("Fitted values",line = -0.8,cex.main =1.05)
+
+#quantile-quantile plot of standardised residuals
+qqnorm(est.dynamics$std.res,main="",xlab="Theoretical quantiles",ylab="Sample quantiles")
+qqline(est.dynamics$std.res, col = 2)
+title("Normality plot",line = -0.8,cex.main =1.05)
+
+
+
+#3. Confidence Intervals
+
+#- Monte Carlo Approach -
+
+#simulations
+niter=10000
+r1=rmvnorm(niter,mean=MLE$par,sigma=v_ob)		#multivariate samples with true var-cov matrix
+if(sum(which(r1<=0,r1)[,1])>0)r1=r1[-which(r1<=0,r1)[,1],] #remove negative values of Fo
+
+Pars.MC=matrix(nrow=niter,ncol=length(pars))
+Bo.MC=Bo.MAT.MC=Bo.EXP.MC=vector(length=niter)
+cpue.MC=B.EXP.MC=B.MC=B.MAT.MC=matrix(nrow=niter,ncol=n.years)
+system.time(for(bb in 1:nrow(r1))
+{
+  MCpars=r1[bb,]
+  Pars.MC[bb,]=MCpars
+  
+  cpue.MC[bb,]=stock.ass(MCpars)$cpue
+  
+  Bo.MC[bb]=stock.ass(MCpars)$Bo
+  Bo.MAT.MC[bb]=stock.ass(MCpars)$Bo.mature  
+  Bo.EXP.MC[bb]=stock.ass(MCpars)$Bo.exp
+  
+  B.MC[bb,]=stock.ass(MCpars)$B
+  B.MAT.MC[bb,]=stock.ass(MCpars)$B.MAT  
+  B.EXP.MC[bb,]=stock.ass(MCpars)$B.EXP
+  
+})
+
+#biomasses as percent of Bo
+B.MC.per=(B.MC/matrix(rep(Bo.MC,n.years),niter,n.years,byrow=F))*100
+B.MAT.MC.per=(B.MAT.MC/matrix(rep(Bo.MAT.MC,n.years),niter,n.years,byrow=F))*100  
+B.EXP.MC.per=(B.EXP.MC/matrix(rep(Bo.EXP.MC,n.years),niter,n.years,byrow=F))*100   
+
+
+#CIs
+#note: use summary() to determine if predicting negative biomass or cpue
+
+MC.list.names=c("CI.low","CI.up")
+CI.cpue.MC=CI.B.MC=CI.B.MAT.MC=CI.B.EXP.MC=CI.B.per.MC=CI.B.MAT.per.MC=CI.B.EXP.per.MC=list()
+
+CI.cpue.MC[[MC.list.names[1]]]=colQuantiles(cpue.MC,prob=0.025,na.rm=T)
+CI.cpue.MC[[MC.list.names[2]]]=colQuantiles(cpue.MC,prob=0.975,na.rm=T)
+
+CI.B.MC[[MC.list.names[1]]]=colQuantiles(B.MC,prob=0.025,na.rm=T)
+CI.B.MC[[MC.list.names[2]]]=colQuantiles(B.MC,prob=0.975,na.rm=T)
+
+CI.B.MAT.MC[[MC.list.names[1]]]=colQuantiles(B.MAT.MC,prob=0.025,na.rm=T)
+CI.B.MAT.MC[[MC.list.names[2]]]=colQuantiles(B.MAT.MC,prob=0.975,na.rm=T)
+
+CI.B.EXP.MC[[MC.list.names[1]]]=colQuantiles(B.EXP.MC,prob=0.025,na.rm=T)
+CI.B.EXP.MC[[MC.list.names[2]]]=colQuantiles(B.EXP.MC,prob=0.975,na.rm=T)
+
+CI.B.per.MC[[MC.list.names[1]]]=colQuantiles(B.MC.per,prob=0.025,na.rm=T)
+CI.B.per.MC[[MC.list.names[2]]]=colQuantiles(B.MC.per,prob=0.975,na.rm=T)
+
+CI.B.MAT.per.MC[[MC.list.names[1]]]=colQuantiles(B.MAT.MC.per,prob=0.025,na.rm=T)
+CI.B.MAT.per.MC[[MC.list.names[2]]]=colQuantiles(B.MAT.MC.per,prob=0.975,na.rm=T)
+
+CI.B.EXP.per.MC[[MC.list.names[1]]]=colQuantiles(B.EXP.MC.per,prob=0.025,na.rm=T)
+CI.B.EXP.per.MC[[MC.list.names[2]]]=colQuantiles(B.EXP.MC.per,prob=0.975,na.rm=T)
+
+
+#medians
+cpue.median.MC=colMedians(cpue.MC,na.rm=T)
+B.median.MC=colMedians(B.MC,na.rm=T)
+B.MAT.median.MC=colMedians(B.MAT.MC,na.rm=T)
+B.EXP.median.MC=colMedians(B.EXP.MC,na.rm=T)
+B.median.per.MC=colMedians(B.MC.per,na.rm=T)
+B.MAT.median.per.MC=colMedians(B.MAT.MC.per,na.rm=T)
+B.EXP.median.per.MC=colMedians(B.EXP.MC.per,na.rm=T)
+
+
+
+
+#--- REPORT SECTION ---#
+
+# 1. MLE
+#1.1. exploitable biomass
+plot(Year,est.dynamics$B.EXP/1000,type='o',ylim=c(0,3000),ylab="Exploitable biomass (tons)",xlab="")
+
+#1.2 cpue
+plot(Year,CPUE,type='o',ylim=c(0,5),ylab="cpue",xlab="")
+lines(Year,est.dynamics$cpue,col=2,type='o')
+
+
+# 2.  CONFIDENCE INTERVALS 
+Year.Vec <- c(Year, tail(Year, 1), rev(Year), Year[1]) #year vector for polygons
+biomass.plot=function(DATA1,DATA2,DATA3,DATA4,divisor,TITLE,YLIM)
+{
+  Biom.Vec <- c(DATA1, tail(DATA2, 1), rev(DATA2), DATA1[1])
+  plot(range(Year), range(c(DATA1,DATA2))/divisor, type = "n", ylab=TITLE
+       ,xlab="",ylim=c(0,YLIM))
+  polygon(Year.Vec, Biom.Vec/divisor, col = "grey", border = NA)
+  matlines(Year, cbind(DATA3,DATA1,DATA2)/divisor, lty = c(1, 2, 2), type = "l", col =  
+             c("black", "red", "red")) #median, lower and upper
+  lines(Year,DATA4/divisor,col=3) #MLE
+}
+
+#    # 2.1 Bootstrapping
+# 
+# 2.1.1 biomass 
+par(mfcol=c(3,1),las=1,mai=c(.725,.5,.2,.5),omi=c(.25,.25,.1,.2))
+
+#--- Biomasses. biased-corrected CI
+#total biomass  (with shaded confidence intervals)
+biomass.plot(CI.B$CI.low,CI.B$CI.up,B.median,est.dynamics$B,1000,"Total biomass (tons)",10000)
+#mature female biomass  (with shaded confidence intervals)
+biomass.plot(CI.B.MAT$CI.low,CI.B.MAT$CI.up,B.MAT.median,est.dynamics$B.MAT,1000,"Mature biomass (tons)",2000)
+#exploitable biomass  (with shaded confidence intervals)
+biomass.plot(CI.B.EXP$CI.low,CI.B.EXP$CI.up,B.EXP.median,est.dynamics$B.EXP,1000,"Exploitable biomass (tons)",5000)
+legend('topright',c("median","MLE"),bty='n',lty=1,col=c(1,3))
+
+#--- Percentage biomasses. Biased-corrected CI
+#total biomass  (with shaded confidence intervals)
+biomass.plot(CI.B.per$CI.low,CI.B.per$CI.up,B.median.per,100*est.dynamics$B/est.dynamics$Bo,1,"Total biomass (%)",100)
+lines(Year,rep(Ref.pt,n.years),col=4)
+#mature female biomass  (with shaded confidence intervals)
+biomass.plot(CI.B.MAT.per$CI.low,CI.B.MAT.per$CI.up,B.MAT.median.per,100*est.dynamics$B.MAT/est.dynamics$Bo.mature,1,"Mature biomass (%)",100)
+lines(Year,rep(Ref.pt,n.years),col=4)
+#exploitable biomass  (with shaded confidence intervals)
+biomass.plot(CI.B.EXP.per$CI.low,CI.B.EXP.per$CI.up,B.EXP.median.per,100*est.dynamics$B.EXP/est.dynamics$Bo.exp,1,"Exploitable biomass (%)",100)
+lines(Year,rep(Ref.pt,n.years),col=4)
+legend('topright',c("median","MLE"),bty='n',lty=1,col=c(1,3))
+
+#2.1.2 cpue
+par(mfcol=c(1,1),las=1,mai=c(.725,.5,.2,.5),omi=c(.25,.25,.1,.2))
+plot(Year,CPUE.1,type='o',ylim=c(0,5),ylab="cpue",xlab="") #observed
+lines(Year,It.pred,col=4,type='o')#MLE
+for(i in 1:nrow(CPUE.boot)) lines(Year,CPUE.boot[i,],col=3) #bootstrapped
+
+
+#2.1.3 estimated pars
+par(mfcol=c(3,2),las=1,mai=c(.725,.5,.2,.5),omi=c(.25,.25,.1,.2))
+pars.plot=function(DATA,TITLE)
+{
+  plot(density(DATA, adjust=2), type="l",lty=1,col="red",xlab=TITLE,ylab="",main="",
+       cex.axis=1.1,cex.lab=1.4)
+}
+par.title=c("R.star","z","q.first","q.second","Fo")
+for ( i in 1:length(pars)) pars.plot(Pars.boot[,i],par.title[i])
+
+
+
+# 2..2 Monte Carlo
+
+# 2.2.1 biomass 
+
+par(mfcol=c(3,1),las=1,mai=c(.725,.5,.2,.5),omi=c(.25,.25,.1,.2))
+
+#--- Biomasses. biased-corrected CI
+#total biomass  (with shaded confidence intervals)
+biomass.plot(CI.B.MC$CI.low,CI.B.MC$CI.up,B.median.MC,est.dynamics$B,1000,"Total biomass (tons)",5000)
+
+#mature female biomass  (with shaded confidence intervals)
+biomass.plot(CI.B.MAT.MC$CI.low,CI.B.MAT.MC$CI.up,B.MAT.median.MC,est.dynamics$B.MAT,1000,"Mature biomass (tons)",2500)
+
+#exploitable biomass  (with shaded confidence intervals)
+biomass.plot(CI.B.EXP.MC$CI.low,CI.B.EXP.MC$CI.up,B.EXP.median.MC,est.dynamics$B.EXP,1000,"Exploitable biomass (tons)",3000)
+legend('topright',c("median","MLE"),bty='n',lty=1,col=c(1,3))
+
+
+#--- Percentage biomasses. Biased-corrected CI
+#total biomass  (with shaded confidence intervals)
+biomass.plot(CI.B.per.MC$CI.low,CI.B.per.MC$CI.up,B.median.per.MC,100*est.dynamics$B/est.dynamics$Bo,1,"Total biomass (%)",100)
+lines(Year,rep(Ref.pt,n.years),col=4)
+
+#mature female biomass  (with shaded confidence intervals)
+biomass.plot(CI.B.MAT.per.MC$CI.low,CI.B.MAT.per.MC$CI.up,B.MAT.median.per.MC,100*est.dynamics$B.MAT/est.dynamics$Bo.mature,1,"Mature biomass (%)",100)
+lines(Year,rep(Ref.pt,n.years),col=4)
+
+#exploitable biomass  (with shaded confidence intervals)
+biomass.plot(CI.B.EXP.per.MC$CI.low,CI.B.EXP.per.MC$CI.up,B.EXP.median.per.MC,100*est.dynamics$B.EXP/est.dynamics$Bo.exp,1,"Exploitable biomass (%)",100)
+lines(Year,rep(Ref.pt,n.years),col=4)
+legend('topright',c("median","MLE"),bty='n',lty=1,col=c(1,3))
+
+
+#   #2.2.2 cpue
+par(mfcol=c(1,1),las=1,mai=c(.725,.5,.2,.5),omi=c(.25,.25,.1,.2))
+biomass.plot(CI.cpue.MC$CI.low,CI.cpue.MC$CI.up,cpue.median.MC,est.dynamics$cpue,1,"cpue (units?)",5)
+points(Year,CPUE.1,pch=19,ylim=c(0,5)) #observed
+
+
+#   #2.3.3 estimated pars
+par(mfcol=c(3,2),las=1,mai=c(.725,.5,.2,.5),omi=c(.25,.25,.1,.2))
+pars.plot=function(DATA,TITLE)
+{
+  plot(density(DATA, adjust=2), type="l",lty=1,col="red",xlab=TITLE,ylab="",main="",
+       cex.axis=1.1,cex.lab=1.4)
+}
+par.title=c("R.star (e+4)","z","q.first (e-6)","q.second (e-6)","Fo")
+for ( i in 1:ncol(Pars.MC)) pars.plot(Pars.MC[,i],par.title[i])
+
+```

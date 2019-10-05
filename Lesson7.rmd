@@ -62,9 +62,196 @@ knitr::opts_chunk$set(fig.width = 6,fig.height = 6,
 ```
 
 # Lesson goals
-We're going to apply a range of multivariate statistics.
+We're going to apply a range of basic multivariate statistics.
+
+This will not be a comprehensive analysis
+
+Rather, it is a guide for those interested in learning how to implement this type of analyses in R
+
+Much more (and better) can be done than what is shown here...
+
+
 
 <br>
-Credits to John Hoenig, Ainslie Denham and Alex Hesp
-<br><br>
+source
+https://peat-clark.github.io/BIO381/veganTutorial.html
 
+https://chrischizinski.github.io/rstats/adonis/
+
+<br>
+```{r}
+library(vegan)
+
+#1. load data
+data(dune) # Vegetation and Environment in Dutch Dune Meadows
+str(dune) #a data frame of observations of 30 species at 20 sites
+
+
+#2. Diversity of each site
+simpson <- diversity(dune, "simpson")
+round(simpson,3)
+#calculate Simpson's 1-D Index of Diversity for each site. 
+# closer to 1 = greater diversity
+
+shannon <- diversity(dune) # note that Shannon's is default
+round(shannon,3) #Typically ranges from 1.5 - 3.4, higher = more diverse
+
+# lets compare the two
+par(mfrow = c(1, 2))  
+hist(simpson)
+hist(shannon)
+
+
+#3. Calculate dissimilarity distance
+# Vegdist computes dissimilarity indices. 
+#We are using gower and bray-curtis which are good in
+# detecting underlying ecological gradients
+#They are bounded between 0 and 1, 
+#  where 0 = same composition, 1 = maximally dissimilar
+par(mfrow = c(1, 2))
+bray = vegdist(dune, "bray") 
+gower = vegdist(dune, "gower")
+hist(bray, xlim = range(0.0,1.0))
+hist(gower, xlim = range(0.0,1.0))
+
+
+#4. Non-Metric Multidimensional Scaling (nMDS)
+# The goal of NMDS is to collapse information from multiple
+#  dimensions (e.g, from multiple communities, sites, etc.) 
+#  into just a few, so that they can be visualized & interpreted.
+# NMDS does not produce a statistical output
+
+#create a random comunity matrix
+set.seed(2) # random no. generator / way to specify seeds
+community_matrix=matrix(
+   sample(1:100,300,replace=T),nrow=10, 
+   dimnames=list(paste("community",1:10,sep=""),
+                 paste("sp",1:30,sep="")))
+community_matrix[1:5,1:10]
+
+#run nMDS
+example_NMDS=metaMDS(community_matrix, # Our matrix
+             k=2) # The number of reduced dimensions. 
+                  #  Increase if high stress is problem.
+#A good rule of thumb:
+#  stress > 0.05 provides an excellent representation 
+#               in reduced dimensions,
+# > 0.1 is great,
+# >0.2 is good/ok,
+# and stress > 0.3 provides a poor representation
+
+par(mfrow = c(1, 1))
+plot(example_NMDS)
+
+#add text to make sense of plot:
+  #Ordination plot function especially for congested plots
+ordiplot(example_NMDS,type="n")
+
+  #The function adds text or points to ordination plots
+orditorp(example_NMDS,display="species",col="red",air=0.01)
+
+orditorp(example_NMDS,display="sites",cex=1.1,air=0.01)
+
+
+#5. Multivariate analysis of variance for statistical testing
+#We will use adonis(): 
+#   A multivariate analysis of variance using distance matrices
+# Adonis and uses permutation
+# tests to inspect the significances of those partitions  
+
+#Other methods implemented in vegan: 
+# multiresponse permutation procedure (mrpp)
+# analysis of similarities (anosim)
+
+# create dummy data (3 sets of 30 sites, 10 species)
+set.seed(666)
+num<-30
+disp.a<-5
+sites.a<-data.frame(
+  sp.a=rnbinom(num,mu = 4, size = disp.a),
+  sp.b=rnbinom(num,mu = 6, size = disp.a),
+  sp.c=rnbinom(num,mu = 5, size = disp.a),
+  sp.d=rnbinom(num,mu = 7, size = disp.a),
+  sp.e=rnbinom(num,mu = 1, size = disp.a),
+  sp.f=rnbinom(num,mu = 18, size = disp.a),
+  sp.g=rnbinom(num,mu = 10, size = disp.a),
+  sp.h=rnbinom(num,mu = 8, size = disp.a),
+  sp.i=rnbinom(num,mu = 4, size = disp.a),
+  sp.j=rnbinom(num,mu = 5, size = disp.a))
+
+disp.b<-15
+sites.b<-data.frame(
+  sp.a=rnbinom(num,mu = 20, size = disp.b),
+  sp.b=rnbinom(num,mu = 30, size = disp.b),
+  sp.c=rnbinom(num,mu = 25, size = disp.b),
+  sp.d=rnbinom(num,mu = 35, size = disp.b),
+  sp.e=rnbinom(num,mu = 5, size = disp.b),
+  sp.f=rnbinom(num,mu = 90, size = disp.b),
+  sp.g=rnbinom(num,mu = 50, size = disp.b),
+  sp.h=rnbinom(num,mu = 40, size = disp.a),
+  sp.i=rnbinom(num,mu = 20, size = disp.b),
+  sp.j=rnbinom(num,mu = 25, size = disp.a))
+
+
+disp.c<-30
+sites.c<-data.frame(
+  sp.a=rnbinom(num,mu = 40, size = disp.c),
+  sp.b=rnbinom(num,mu = 60, size = disp.a),
+  sp.c=rnbinom(num,mu = 50, size = disp.b),
+  sp.d=rnbinom(num,mu = 70, size = disp.c),
+  sp.e=rnbinom(num,mu = 10, size = disp.c),
+  sp.f=rnbinom(num,mu = 180, size = disp.c),
+  sp.g=rnbinom(num,mu = 100, size = disp.c),
+  sp.h=rnbinom(num,mu = 80, size = disp.a),
+  sp.i=rnbinom(num,mu = 40, size = disp.c),
+  sp.j=rnbinom(num,mu = 50, size = disp.c))
+
+#combine data
+all.sites<-rbind(sites.a,sites.b,sites.c)
+
+#treatments
+trt<-rep(c("Control","High","Low"),each=nrow(sites.a))
+
+#run nMDS
+library(ggplot2)
+all.mds <- metaMDS(all.sites)  #using all the defaults
+
+data.scores <- as.data.frame(scores(all.mds))  
+data.scores$site <- rownames(data.scores)  
+data.scores$grp<-trt
+
+ggplot(data=data.scores) + 
+  stat_ellipse(aes(x=NMDS1,y=NMDS2,colour=trt),level = 0.50) +
+  geom_point(aes(x=NMDS1,y=NMDS2,shape=trt,colour=trt),size=4)
+
+# there seems to be some differences but let's run the stats
+
+#run adonis
+adon.results<-adonis(all.sites ~ trt, method="bray",perm=999)
+print(adon.results)
+
+#So there are S differences between control and high 
+#....(whatever high is)
+
+
+#Let's run this thru anosim()
+all.sites.dist <- vegdist(all.sites) #dissimilarity matrix
+anos.results<-anosim(all.sites.dist,trt)
+print(anos.results)
+#Interpretation: 
+#ANOSIM tests whether we can reject the null hypothesis that
+# the similarity between groups is greater than or equal
+# to the similarity within the groups
+# ANOSIM generates a value of R which lies between -1 and 1, 
+# R=0 representing the null hypothesis (no difference
+#     among treatments).
+# R>0 suggest more similarity within treatment 
+# R<0 suggest more similarity between sites than within sites 
+#     and may raise the possibility of wrong assignment of 
+#     samples to sites.
+# The closer R is to 1, the more the samples within a site
+#  are similar to each other and dissimilar to samples in 
+#  other sites
+plot(anos.results)
+
+```

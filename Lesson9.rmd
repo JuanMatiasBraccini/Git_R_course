@@ -57,41 +57,19 @@ pre {
 
 
 ```{r globaloptions, include=FALSE}
-knitr::opts_chunk$set(fig.width = 6,fig.height = 6,
+knitr::opts_chunk$set(fig.width = 6,fig.height = 6,error=TRUE,
                         echo = TRUE, warning=FALSE,message=FALSE)
 ```
 # Lesson goals
-We're going to a range of other R related concepts and applications:
-* Directories and file paths
-* Vectorization (add purr package, function map, apply equivalent of tidyverse)
-* Version control and Rmarkdown
-* Building websites  (shiny, blogdown package) 
+We're going to touch on other useful concepts and applications:
 
-<br>
-Credits to John Hoenig, Ainslie Denham and Alex Hesp
-<br><br>
+- Version control and Rmarkdown
+- Making code more efficient
 
 
-<br>
-
-# Directories and file paths
-
-
-<br><br>
-
-# Vectorization
-
-
-
-<br><br>
-
-package here for managing paths and wd
-https://malco.io/2018/11/05/why-should-i-use-the-here-package/
-
-
-# Version control and Rmarkdown
-
-add reference manager, equations, etc
+# Version control
+source:
+https://github.com/adw96/biostat561/blob/master/lecture1/lecture1.Rmd
 
 What problems can you see with the following approach to version control?
 
@@ -102,16 +80,10 @@ What problems can you see with the following approach to version control?
 - papersims-v5.R
 - papersims-final.R
 
-
-# Version control
-
 1. How many versions until this becomes intractable?
-2. *Date Modified* sorting does not always help
-3. Tracking changes is very difficult; reversion is even harder
-4. Exponential file number growth with multiple collaborators!
-5. The dreaded computer crash
+2. Exponential file number growth with multiple collaborators!
 
-Dropbox can help with some of these issues, but generally not (3) or (4)!
+...coudl use Dropbox ...but there's a better way..
 
 # Git
 
@@ -134,14 +106,6 @@ git & GitHub are popular with R developers
     - Circumvents CRAN moderators; for better or worse
 - Always get the latest features (`devtools`; `install_github`)
 
-# Git with life
-
-- Collaborations: syncing across multiple computers
-- Portability: including for you
-- TODOs as Issues: including your own
-- Teams: `fork`, `pull` request
-    - Like a package but hate the default figures? `fork` it, edit it, use your own version!
-- Visibility: social/professional network
 
 # Getting started with git
 
@@ -151,17 +115,117 @@ git & GitHub are popular with R developers
 - Questions? Error messages? The internet is a great resource!
 - *git is a great habit to get into early! Start now!*
 
-Homework 1 Question 0 will get you started using git, GitHub and GitHub Classroom.
-
-# Getting started with git
-
-The workflow that I want you to follow for downloading the latest lecture notes is `git pull` (see Question 0 of Homework 1)
 
 The standard workflow for uploading a new file or updating an old one (e.g., for your homework submission):
 
 ```{r, eval = FALSE}
 git pull
-git add hw1-response.pdf
 git commit -a -m 'question 2 part b response'
 git push
 ```
+
+
+<br><br>
+
+# Rmarkdown
+source:
+https://rmarkdown.rstudio.com
+
+cheat sheet
+https://rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf
+
+reference guide
+https://rstudio.com/wp-content/uploads/2015/03/rmarkdown-reference.pdf
+
+Rmarkdown is used to 
+
+- run analysis,
+-  generate outputs
+-  combine those outputs into documents (pdfs, htmls, word, ppt, etc)
+
+Each .Rmd file has three types of components:
+
+- Meta data (YAML) that guides how to create the document
+- chunks (that execute R code)
+- text
+
+**You can write your entire thesis this way (can even add your Reference list...)**
+<br><br>
+
+# Making code more efficient 
+
+## Package purrr
+source:
+https://towardsdatascience.com/functional-programming-in-r-with-purrr-469e597d0229
+
+```{r}
+library(purrr)
+
+#1. When starting using R
+employee <- c('John Doe','Peter Gynn','Jolie Hope')
+salary <- c(21000, 23400, 26800)
+startdate <- as.Date(c('2010-11-1','2008-3-25','2007-3-14'))
+
+# from dataframe and take mean of salary column
+employ_data <- data.frame(employee, salary, startdate)
+mean(employ_data$salary)
+
+#let's do some anovas the traditional way...
+aov_mpg <- aov(mpg ~ factor(cyl), data = mtcars)
+summary(aov_mpg)
+aov_disp <- aov(disp ~ factor(cyll), data = mtcars)
+summary(aov_disp)
+aov_hp <- aov(hp ~ factor(cyl), data = mrcars)
+summary(aov_hpp)
+aov_wt <- aov(wt ~ factor(cyl), datas = mtcars)
+summary(aov_wt)
+#Ooops, I copied and pasted multiple times and made some errors...
+
+
+#2. OK, we can do loops...but now we know dplyr...
+library(dplyr)
+
+# Let’s calculate the R-squared values for the linear 
+# relationship between Weight and Miles per Gallon, 
+#  according to the number of Cylinders
+
+  #1. create df for 4 cylinder cars
+cyl_4 <- filter(mtcars, cyl == 4)
+  
+  #2.  create a linear model on 4 cyl cars
+lm_4 <- lm(mpg ~ wt, data = cyl_4)
+
+  #3.  get the summ
+lm_4_summary <- summary(lm_4)
+
+  #4.  get the r.squared value
+lm_4_r_squared <- lm_4_summary["r.squared"]
+
+  #5.  check the value
+lm_4_r_squared
+
+
+#...or we can use pipes..
+lm_4cyl_rsquared <- mtcars %>% 
+  filter(cyl == 4) %>%
+  lm(mpg ~ wt, data = .) %>% 
+  summary() %>% 
+  .$"r.squared"
+lm_4cyl_rsquared
+
+
+#...but...to avoid repetition, we can use purrr
+# purrr allows you to map functions to data
+table(mtcars$cyl)
+
+# Generates an output from all 3 of our linear models 
+#   according to number of cylinders in 5 lines of code:
+mtcars %>%
+  split(.$cyl) %>%
+  map(~ lm(mpg ~ wt, data = .)) %>%
+  map(summary) %>%
+  map_dbl("r.squared")
+
+
+```
+
