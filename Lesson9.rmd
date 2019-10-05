@@ -64,7 +64,7 @@ knitr::opts_chunk$set(fig.width = 6,fig.height = 6,error=TRUE,
 We're going to touch on other useful concepts and applications:
 
 - Version control and Rmarkdown
-- Making code more efficient
+- Make code more efficient
 
 
 # Version control
@@ -83,7 +83,7 @@ What problems can you see with the following approach to version control?
 1. How many versions until this becomes intractable?
 2. Exponential file number growth with multiple collaborators!
 
-...coudl use Dropbox ...but there's a better way..
+...could use Dropbox ...but there's a better way..
 
 # Git
 
@@ -152,7 +152,7 @@ Each .Rmd file has three types of components:
 **You can write your entire thesis this way (can even add your Reference list...)**
 <br><br>
 
-# Making code more efficient 
+# Make code more efficient 
 
 ## Package purrr
 source:
@@ -229,3 +229,24 @@ mtcars %>%
 
 ```
 
+## Vectorising
+vectorising involves manipulating your data to avoid using loops
+```{r}
+#Create some data
+N=1e5
+dat=data.frame(var1=as.numeric(1:N))
+
+#Create var2 which equal to the cumulative sum of var1
+
+#1. loop approach
+dat$var2.loop=NA
+system.time({for(i in 2:nrow(dat)) dat$var2.loop[i]=dat$var1[i-1]+dat$var1[i]})
+
+library(dplyr)
+system.time({dat=dat%>%mutate(var2.lag=lag(var1,1)+var1)})
+
+head(dat)
+```
+For N=3e5, system time for loop is **183s** and for lag() is **0s**
+
+...so exponential increase for loops

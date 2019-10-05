@@ -57,7 +57,7 @@ pre {
 
 
 ```{r globaloptions, include=FALSE}
-knitr::opts_chunk$set(fig.width = 6,fig.height = 6,
+knitr::opts_chunk$set(fig.width = 6,fig.height = 6,error=TRUE,
                         echo = TRUE, warning=FALSE,message=FALSE)
 ```
 
@@ -66,144 +66,131 @@ We're going to expand on doing plots and maps.
 
 
 
-#full list of packages necessary for this series of tutorials can be installed with:
-# install.packages(c("cowplot", "googleway", "ggplot2", "ggrepel", "maps","rgeos","grid",
-#                     "ggspatial", "libwgeom", "sf", "rnaturalearth", "rnaturalearthdata",
-#                     "rsvg","magick")
+full list of packages necessary for this series of tutorials can be installed with:
+
+install.packages(c("cowplot", "googleway", "ggplot2", "ggrepel", "maps","rgeos","grid","ggspatial", "libwgeom", "sf", "rnaturalearth", "rnaturalearthdata","rsvg","magick")
 
 
-#-----#Base Plotting--------------------
-# MSCI 698 Statistical and Graphical Analysis in R    Janos Hoenig, fall 2008
-#
-# Plotting a function: some advanced techniques
+# Base Plotting
+Credits to John Hoenig
+<br>
+## 1. par()
+```{r}
 
-# Suppose we are interested in the function defined in polar coordincates by
-# r = 4(1-sin(theta)). What does this function look like, when it is graphed
-# over the range of theta from -1.4 pi to 0.7 pi?
+#type ?par
+plot(1:10)
+par(bg=3,cex.axis=2,cex.lab=3,col=4,
+    col.axis="steelblue",fg="white",
+    font.axis=2,las=3)
+plot(1:10)
 
-theta <- seq(-1.4*pi,.7*pi,.01)   # set up a vector of theta values over which
-# the function will be evaluated
+dev.off() #rest par to default
 
-r <- 4*(1-sin(theta))             # compute the corresponding values of r
+```
 
-x <- r*cos(theta)                 # convert to Cartesian (x-y) coordinates
-y <- r*sin(theta)
-xrange <- range(x)                # dtermine the range of the x and y values
-yrange <- range(y)
+## 2. Margins
+```{r}
+# There are two kinds of margins in a plot:
+#    plot margins - where you put your axis labels for e.g.
+#    outer margins - where you can put text, especially when
+#                    you have several plots on a page.
+#                    DEFAULT is to have outer margins = 0
 
-require(graphics)             # some systems require you to do this; most don't
+# create some sample data to plot:
+x1 = 2:5
+y1 = c(8,5,4,1)
+x2 = 2:5
+y2 = c(2,3,5,7.7)
 
-pie(rep(1,12),col=1:12)   # Note that the default palette has just 8 colors.
-# NOTE: to make a pie chart, you specify a vector of relative areas of the
-# pie slices; optionally, you can specify the corresponding colors a/o labels
+# set the outer (figure) margin & the inner (plot) margin
+par(oma=c(4,4,4,4),mar=c(4,4,4,4))  
+plot(x1,y1,typ="l", ylab="This is y",
+     xlab="This is x") 
 
-# Color Wheels: let's see what the rainbow colors are when we specify n colors
-pie(rep(1,6),col=rainbow(6))
-pie(rep(1,12),col=rainbow(12))
-pie(rep(1,24), col=rainbow(24))
+# red box around 
+box(which="plot",lty=1,col=2)   
 
-palette(rainbow(24)) # decide to use the rainbow palette with 24 shades of color
+# green box around the figure margin
+box(which="figure",lty=2,col=3) 
 
-par(bty="n",xaxt="n",yaxt="n")   # no box, no x-axis, no y axis
-plot(c(0,.2),c(-1,-1),typ="l",xlim=xrange,ylim=yrange,xlab="",ylab="")  
-# you have to plot something before you can add a colored rectangle or polygon
+# add some text in the inner margin of side 1
+mtext("plot margin 1",side=1,line=2,col=2)  
 
-par(xpd=NA)      # xpd determines how much of the page is plotted on.
-# xpd can be: FALSE, TRUE or NA (see below)
+# add text in the outer margin on side 1
+mtext("outer (figure) margin 1",side=1,line=2,outer=T,col=3)  
 
-rect(-10, -14, 7, 4.5,col=19)   # draw a rectangle with lower left corner at
-# (x,y) = (-10,-14) and upper right corner at
-# (x,y) = (7,4.5) and fill it with color 19
+# text on side 4 illustr. line option
+mtext("plot margin 4 in line 1",side=4,col=2,line=1)
+mtext("plot margin 4 in line 2", side = 4,col=2,line=2)
 
-rect(-7, -9, 5.3, 2.5,col=20)
+# same, for outer margin
+mtext("outer margin 4 inline 1",side=4,col=3,line=1,outer=T)
+mtext("outer margin 4 in line 2",side=4,col=3,line=2,outer=T)
 
-par(new=T)          # we need the par() statement because the next command is a
-# high level plotting function (as opposed to rect, abline,
-# text, etc. that are low-level plotting commands) - without
-# the par() statement a high level plotting command will 
-# paint over the previous plot
-plot(.8*x,.8*y,typ="l",xlim=xrange,ylim=yrange,xlab="",ylab="",lwd=1.7,col=7)
-# We have plotted the function. (I multiplied the x and y values by .8 so they'd
-# fit on the page better.) We can also plot the figure as if it were a polygon
-# and fill it with a color, as in the next line
-
-polygon(.8*x,.8*y,xpd=NA,col=21)   # polygon is a low-level plotting function.
-
-polygon(.64*x,.64*y-.7,col=22)
-polygon(.64*.8*x,.64*.8*y-1.2,col=23)
-text(0,-7.5,col=13,expression(paste("I'm thinking r = 4(1-sin",theta,")")),
-     cex=2.0)
-
-# now add two small hearts on the left
-par(new=T)
-plot(.1*x-4.7,.1*y+1,typ="l",xlim=xrange,ylim=yrange,xlab="",ylab="",lwd=1.7,
-     col=13)
-par(new=T)
-plot(.1*x-4.7,.1*y-6,typ="l",xlim=xrange,ylim=yrange,xlab="",ylab="",lwd=1.7,
-     col=13)
+```
 
 
-###########################
-#
-# Let's pick more subtle colors
+## 3. Margins for multiplots
+```{r}
+par(mfrow=c(2,2),oma=c(4,4,4,4),mar=c(4,4,4,4))
+plot(x1,y1,typ="l")    
 
-# Color Wheels
-pie(rep(1,6),col=cm.colors(6))
-pie(rep(1,12),col=cm.colors(12))
-pie(rep(1,24), col=cm.colors(24))
-mtext("the cm.colors(24) palette")
+# box around plot
+box(which="plot",lty=1,col=2)    
+box(which="figure",lty=2,col=3) 
+# NOTE where the box goes!
 
-palette(cm.colors(24))    # decide to use the cm palette
-par(bty="n",xaxt="n",yaxt="n")   # no box, no x-axis, no y axis
-plot(c(0,.2),c(-1,-1),typ="l",xlim=xrange,ylim=yrange,xlab="",ylab="")  # have to plot 
-# something before you can color a rectangle
-par(new=T,xpd=NA)      # xpd determines how much of the page is plotted on
-rect(-10, -14, 7, 4.5,col=1)
-rect(-7, -9, 5.3, 2.5,col=5)         # I don't like the black border on the box
-rect(-7,-9,5.3,2.5,col=4,border=NA)  # get rid of the border
+mtext("plot margin 1",side=1,line=2,col=2)  
+plot(x2,y2,typ="l")              
+box(which="plot",lty=1,col=2) 
+box(which="figure",lty=2,col=3)
+mtext("plot margin 1",side=1,line=2,col=2)  
+# add text to the outer margin: NOTE where the text goes!
 
-polygon(.8*x,.8*y,xpd=NA,col=19, border=NA)
+mtext("outer margin 2",side=2,line=2,col=3,outer=T)
 
-polygon(.64*x,.64*y-.7,col=21, border=NA)
+# make our 3rd graph, but change the margins
+par(mar=c(4,4,0,0))     
+plot(x1,y1,typ="l")
+box(which="plot", col=2,lty=1)
 
-polygon(.64*.8*x,.64*.8*y-1.2,col=23, border=NA)
-text(0,-7.5,cex=2.3,col=24,expression(paste("I'm thinking r = 4(1-sin",theta,")")))
+# let's add the box around the outside now
+box(which="figure",col=3,lty=2)
 
-# now add two small hearts on the left
-par(new=T)
-plot(.1*x-4.7,.1*y+1,typ="l",xlim=xrange,ylim=yrange,xlab="",ylab="",lwd=1.7,col=24)
-par(new=T)
-plot(.1*x-4.7,.1*y-6,typ="l",xlim=xrange,ylim=yrange,xlab="",ylab="",lwd=1.7,col=24)
+# let's do the last graph
+par(mar=c(4,4,4,4))
+plot(x2,y2,typ="l")
+mtext("inner margin, line=0",line=0,col=2,side=1)
+mtext("inner margin, line=2",line=2,col=2,side=1)
+mtext("inner margin, line=4",line=4,col=2,side=1)
 
-############################################################################
+# add some text to the outer margins
+mtext("outer margin 1",line=2,col=3,side=1,outer=T)
+mtext("outer margin 3",line=2,col=3,side=3,outer=T)
+mtext("outer margin 4",line=2,col=3,side=4,outer=T)
+```
 
-# Some loose ends.
 
-############################################################################
+## 4. Palette (one way to control colors)
+```{r}
+palette('default')       # obtain the current palette
+plot(1:6,col=1:6,pch=19,cex=3)
 
-# the par( ) parameter xpd:
-#                 FALSE   plot is clipped to fit in the plot region (within 
-#                            the figure region)
-#                 TRUE    plot is clipped to fit in the figure region
-#                 NA      plot can cover the entire page
-# see demo below
-x <- c(1:9,8:1)
-y <- c(1,2*(5:3),2,-1,17,9,8,2:9)
-par(mfcol=c(3,1))
-for(xpd in c(FALSE,TRUE,NA)) {
-  plot(1:10, main = paste("xpd =", xpd))
-  box("figure", col = "pink", lwd=3)
-  polygon(x,y, xpd=xpd, col="orange", lty=2, lwd=2, border="red")
-}
+palette(rev(rainbow(6)))     # six color rainbow
+plot(1:6,col=1:6,pch=19,cex=3)
 
-##############################################################################
-#
-# Here is a little program to show you what some color pallettes look like.
-# Don't worry about trying to understand the program - just look at the output
+(palette(gray(seq(0,.9,len = 25)))) # gray scales
+plot(1:25,col=1:25,pch=19,cex=3)
+
+
+par(mfcol=c(1,1))
+# Here is a little program to show you what
+# some color pallettes look like.
+# Don't worry about trying to understand 
+# the program - just look at the output
 # to see some of your options
 
-demo.pal <-
-  function(n, border = if (n<32) "light gray" else NA,
+demo.pal <-function(n, border = if (n<32) "light gray" else NA,
            main = paste("color palettes;  n=",n),
            ch.col = c("rainbow(n, start=.7, end=.1)", "heat.colors(n)",
                       "terrain.colors(n)", "topo.colors(n)",
@@ -218,77 +205,20 @@ demo.pal <-
       text(2*j,  k * j +dy/4, ch.col[k])
     }
   }
-n <- if(.Device == "postscript") 64 else 16
-# Since for screen, larger n may give color allocation problem
-demo.pal(n)
-###############################################################################
-
-# pie charts:  NOTE what the R help page says about pie charts!!!
-
-# examples taken from the bottom of the help page for the pie( ) function
-
-pie.sales <- c(0.12, 0.3, 0.26, 0.16, 0.04, 0.12)
-names(pie.sales) <- c("Blueberry", "Cherry",
-                      "Apple", "Boston Cream", "Other", "Vanilla Cream")
-pie(pie.sales) # default colours
-pie(pie.sales,
-    col = c("purple", "violetred1", "green3", "cornsilk", "cyan", "white"))
-pie(pie.sales, col = gray(seq(0.4,1.0,length=6)))
-pie(pie.sales, density = 10, angle = 15 + 10 * 1:6)
-pie(pie.sales, clockwise=TRUE, main="pie(*, clockwise=TRUE)")
-segments(0,0, 0,1, col= "red", lwd = 2)
-text(0,1, "init.angle = 90", col= "red")
-
-n <- 200
-pie(rep(1,n), labels="", col=rainbow(n), border=NA,
-    main = "pie(*, labels=\"\", col=rainbow(n), border=NA,..")
-
-################################################################################
-#
-#  SUMMARY OF COMMANDS
-#
-# arguements to par()
-#     xpd                     specify limits to plotting:
-#                                FALSE - restrict plotting to the plot area
-#                                TRUE - restrict plotting to the figure area
-#                                NA means plot anywhere on the page
-#     bty="n"                 box type, e.g., "n" = none
-#     xaxt="n",yaxt="n"       x-axis and y-axis types, e.g., "n" = none
-#
-# palette(name(number))       set palette equal to name, with number of colors
-#                                equal to number
-#
-# high level plotting commands
-#     pie(x,labels,border)    create a pie chart with areas of slices given by x 
-#
-# low level plotting commands
-#     rect(x1,y1,x2,y2)       draws a rectangle where you specify (x1,y1 give 
-#                                  the lower left corner and x2,y2 give the 
-#                                  upper right corner
-#     polygon(x,y,color)      draws a polygon by connecting in order a series of
-#                                 (x,y) coordinates and, optionally, cross
-#                                 hatches or colors the interior
-#     box()                   draws a box around the plotting region (with
-#                             rect you can do the same thing but you need to
-#                                specify where you want the box
-#
-################################################################################
+demo.pal(20)
+```
 
 
-#Graphying surfaces (3d)
-# MS698 - Statistical and Graphical Analysis in R                     Fall, 2010 
-
-# Instructor:	Janos (John) M. Hoenig 
-# Contact:	hoenig@vims.edu  
-#           office: x7125; home: 757 564 9766; cell: 804 815 2912
-#
-# This script demonstrates how to make 3-D (three dimensional) graphs using
-# the contour( ), persp( ) and image( ) functions.
-
-# There are some other graphical functions of interest in the lattice and MASS
-# packages. Here's a table summarizing availability of functions in the
-# graphics package (which comes with R, you don't have to load it) and the
-# MASS & lattice packages (which you have to load, e.g., using library(MASS) ).
+## 5. 3d graphs
+```{r}
+# There are some other graphical functions
+#  of interest in the lattice and MASS
+#  packages. Here's a table summarizing 
+#  availability of functions in the
+#  graphics package (which comes with R, 
+#  you don't have to load it) and the
+#  MASS & lattice packages (which you have 
+#  to load, e.g., using library(MASS) ).
 
 # METHOD                  IN (graphics)         IN (package)
 #
@@ -304,138 +234,35 @@ pie(rep(1,n), labels="", col=rainbow(n), border=NA,
 # segment plot            stars
 # interactive 3D graphics                       (rggobi), (rgl)
 
-# If you don't like the output from one function, you can try a similar 
-# function in another package. Note that star plots and segment plots are
-# demonstrated in the superplot.r files in the reference documents & scripts
-# folder, and interactive 3D plots are illustrated in the 
-# fun with scatterplots.r script in the plotting folder (i.e., the folder where
-# this script resides.
-
-################################################################################
-# Let's look at the surface of the log likelihood of the index-removal estimator 
-# of catchability (q) and population size (N) over some range of q and N. That
-# is, we'll want our graph to have population size on the x-axis, catchability
-# q on the y-axis, and height (z-axis value) equal to the value of the log
-# likelihood function.
-
-# We set up a vector of q values and a vector of N values and then compute a
-# value of the function for each combination of q and N; we store these function
-# values in a matrix.
-
-maxlen<-30					      # this value determines the resolution of the graph
-#(output matrix will be maxlen X maxlen)
-
-# Generate the output matrix.  For the moment it will be a square matrix 30x30
-# filled with NAs                             
-answer<-matrix(ncol=maxlen,nrow=maxlen)		 
-answer
-
-# Create a vector N with 30 values, equally spaced between 11 and 100
-
-N <-seq(11,100,len=maxlen) # min N is 11 to avoid warnings
-N
-# Create a vector q with 30 values, equaly spaced between 0.1 and 2 
-# range of q's of 0.1 to 2 is reasonable 
-# Using 0 is ok, but we end up with Inf's at edges
-
-q <- seq(0.1,2,len=maxlen)	 
-q
-
-c1 <- 40  # catch rate before the fishing period
-c2 <- 30  # catch rate after the fishing period
-R <- 10   # Number removed during the fishing period
-
-# Calculation of the log likelihood	
-# we enter these values as i,j elements of our 30*30 answer matrix														
-for (i in 1:maxlen){							# i is for q's and j is for N's
-  for (j in 1:maxlen){
-    answer[i,j] <- c1*log(q[i]) - c1*log(N[j])- q[i]*N[j] + c2*log(q[i]) +
-      c2*log(N[j]-R) - q[i]*(N[j]-R)  # answer is just the value of the loglike.
-  }
-}
-
-answer[1:5,1:5]
-
-# Ooooof! There must be a shorter way. There is.
-expand.grid(q=q,N=N)  # create a matrix with all combinations of q and N
-conditions = expand.grid(q=q,N=N)
-
-answer2 <- c1*log(conditions[,1]) - c1*log(conditions[,2])- 
-  conditions[,2]*conditions[,1] + c2*log(conditions[,1]) + 
-  c2*log(conditions[,2]-R) - q*(conditions[,2]-R) 
-answer2  # we get a vector with the 900 calculated log-likelihoods
-
-answer.alt <-matrix(answer2,ncol=maxlen,nrow=maxlen) # reformat the likelihood
-# values into a matrix. NOTE: expand.grid arranged the q and N values in
-# 2 columns with the q's in column 1 varying the fastest. (i.e., you get
-# all 30 values of q with the first value of N, then all 30 values of q with
-# the second value of N, etc.		 
-answer.alt[1:5,1:5]   # compare the 2 sets of output. They're identical.
-answer[1:5,1:5] 
-
-################################################################################
 # Contour plot
+x <- -6:16
+op <- par(mfrow = c(2, 2),mar=c(2,2,1,1))
+contour(outer(x, x), method = "edge", vfont = c("sans serif", "plain"))
+z <- outer(x, sqrt(abs(x)), FUN = "/")
+image(x, x, z)
+contour(x, x, z, col = "pink", add = TRUE, method = "edge",
+        vfont = c("sans serif", "plain"))
+contour(x, x, z, ylim = c(1, 6), method = "simple", labcex = 1,
+        xlab = quote(x[1]), ylab = quote(x[2]))
+contour(x, x, z, ylim = c(-6, 6), nlev = 20, lty = 2, method = "simple",
+        main = "20 levels; \"simple\" labelling method")
 
-# the format for contour is contour(x values, y values, z values, number of
-# contour lines, ...)
-contour(N ,q,answer,nlevel=8,xlab="N",ylab="q" )
-contour(seq(11,100,len=maxlen) ,seq(0.1,2,len=maxlen),answer,nlevel=8,xlab="N",ylab="q" )
-# The above line does the same thing as the previous line. It just uses the
-# seq( ) function to create the values of q and N instead of feeding in a 
-# vector of values of q and of N.
+```
 
-contour(seq(10,100,len=maxlen) ,seq(0,2,len=maxlen),answer,
-        levels=c(0,-50,-100,-150,-175,-179,-179.5),xlab="N",ylab="q" )
-# In the above use of contour, we specify a vector of values for the contour
-# lines.
+## 6. Expressions
+```{r}
+# Here we will use the paste() and expression() 
+# functions to print text and
+# equations that incorporate special 
+# symbols and mathematical notation.
 
-################################################################################
-# Perspective plot
-# theta and phi are angles defining the viewing direction. 
-# theta gives the azimuthal direction and phi the colatitude. 
-# r is the distance of the eyepoint from the centre of the plotting box. 
-# d is a value which can be used to vary the strength of the perspective 
-# transformation. Values of d greater than 1 will lessen the perspective effect 
-# and values less than 1 will exaggerate it. 
-# expand is an expansion factor applied to the z coordinates. 
-# Often used with 0 < expand < 1 to shrink the plotting box in the z direction. 
-# ltheta, lphi: if finite values are specified for ltheta and lphi, 
-# the surface is shaded as though it was being illuminated from the direction 
-# specified by azimuth ltheta and colatitude lphi. 
+#?expression    # the help page is highly unreadable!
 
-
-# The function persp() draws perspective plots of surfaces over the x?y plane
-
-persp(N,q,answer,xlab="N",ylab="q",theta=30,phi=30,expand=0.8,col="pink")
-persp(N,q,answer,xlab="N",ylab="q",theta=30,phi=30,expand=0.8,col="pink",
-      ltheta=80,shade=0.4,r=6,d=0.5,ticktype="detailed",nticks=10)
-
-################################################################################      
-# The function image() creates a grid of colored or gray-scale rectangles with 
-# colors corresponding to the values in z.      
-
-image(N,q,answer,xlab="N",ylab="q",col=terrain.colors(100))
-box()					
-title(main="answer,x=c(15,30),y=c(1.5,1.8),nint=24",font=3)
-
-# We can superimpose a contour plot on the image
-
-image(N,q,answer,xlab="N",ylab="q")					#using the default colors 
-contour(seq(10,100,len=maxlen) ,seq(0,2,len=maxlen),answer,
-        levels=c(0,-50,-100,-150,-175,-179,-179.5),xlab="N",ylab="q",add=T,col="blue")
-# NOTE: I used add=T to add the contour plot to the image plot
-title(main="answer,x=c(15,30),y=c(1.5,1.8),nint=24")
-
-#Expressions
-# Here we will use the paste() and expression() functions to print text and
-# equations that incorporate special symbols and mathematical notation.
-
-?expression          # the help page is highly unreadable!
-
-# expression() creates an expression that can be printed. It does it by
-# translating code for equations and special symbols into plotting instructions
-# and pasting those translated equations together with any character strings
-# you specify.
+# expression() creates an expression that can be printed.
+# It does it by translating code for equations and 
+#  special symbols into plotting instructions and 
+#  pasting those translated equations together with 
+#  any character strings you specify.
 
 # try executing these commands
 
@@ -451,105 +278,25 @@ text(10,7,expression(paste("f(x) = ",1/sqrt(2*pi * sigma)*exp(- 1/(2*sigma^2)*(x
 text(10,5,expression(paste("f(x) = ",1/sqrt(2*pi * sigma)*e^- 1/(2*sigma^2)*(x - mu)^2)))
 text(10,3,expression(paste("f(x) = ",1/sqrt(2*pi * sigma)*exp(- (x - mu)^2/(2*sigma^2)))))
 
-demo(plotmath)    # this is the instruction manual for typsetting equations
+# instruction manual for typsetting equations
+# demo(plotmath)    
 
-##Margins
-#  QMS short course in R                         February, 2011
-#  instructor: John M. Hoenig, PhD
-#  email: hoenig@vims.edu
-
-# A script to illustrate plot margins and outer margins
-
-# There are two kinds of margins in a plot,
-#    plot margins - where you put your axis labels, for example
-#    outer margins - where you can put text, especially when you have several
-#                    plots on a page. The DEFAULT is to have outer margins of
-#                    size 0
-
-# create some sample data to plot:
-x1 = 2:5
-y1 = c(8,5,4,1)
-x2 = 2:5
-y2 = c(2,3,5,7.7)
-
-par(oma=c(4,4,4,4),mar=c(4,4,4,4))  # set the outer (figure) margin & the
-# inner (plot) margin
-plot(x1,y1,typ="l")              # make a regular kind of plot
-box(which="plot",lty=1,col=2)       # put a red box around the plot margin
-box(which="figure",lty=2,col=3)     # put a green box around the figure margin
-mtext("plot margin 1",side=1,line=2,col=2)  # add some text in the inner margin
-# of side 1
-mtext("outer (figure) margin 1",side=1,line=2,outer=T,col=3)  # add text in the
-# outer margin on side 1
-mtext("plot margin 4",side=4,col=2,line=1)# text on side 4 illustr. line option
-mtext("plot margin 4", side = 4,col=2,line=2)
-mtext("outer margin 4",side=4,col=3,line=1,outer=T)# same, for outer margin
-mtext("outer margin 4",side=4,col=3,line=2,outer=T)
-
-# now let's look at the inner and outer margins when there are multiple plots
-# on a page
-
-par(mfrow=c(2,2),oma=c(4,4,4,4),mar=c(4,4,4,4))
-box(which="figure",lty=2,col=3) # can't add a box until a plot has been created
-plot(x1,y1,typ="l")              # make the first plot              
-box(which="plot",lty=1,col=2)    # box around plot
-box(which="figure",lty=2,col=3)  # NOTE where the box goes!
-mtext("plot margin 1",side=1,line=2,col=2)  # add some text in the inner margin
-plot(x2,y2,typ="l")              # make the second plot
-box(which="plot",lty=1,col=2) 
-box(which="figure",lty=2,col=3)
-mtext("plot margin 1",side=1,line=2,col=2)  # add some text in the inner margin
-# add text to the outer margin: NOTE where the text goes!
-mtext("outer margin 2",side=2,line=2,col=3,outer=T)
-par(mar=c(4,4,0,0))     # make our 3rd graph, but change the margins
-plot(x1,y1,typ="l")
-box(which="plot", col=2,lty=1)
-# let's add the box around the outside now
-box(which="figure",col=3,lty=2)
-# let's do the last graph
-par(mar=c(4,4,4,4))
-plot(x2,y2,typ="l")
-mtext("inner margin, line=0",line=0,col=2,side=1)
-mtext("inner margin, line=2",line=2,col=2,side=1)
-mtext("inner margin, line=4",line=4,col=2,side=1)
-# add some text to the outer margins
-mtext("outer margin 1",line=2,col=3,side=1,outer=T)
-mtext("outer margin 3",line=2,col=3,side=3,outer=T)
-mtext("outer margin 4",line=2,col=3,side=4,outer=T)
+```
 
 
-#Multiplots in one page
-# MS698 - Statistical and Graphical Analysis in R                     Fall, 2010 
+## 7. Multiplots in one page
+```{r}
+n=10
+x1 <- runif(n,1,10)
+y1 <- x1*2*runif(n,.8,1.2)
+x2 <- x1*2
+y2 <- x2*2*runif(n,.8,1.2)
+x3 <- x1*3
+y3 <- x3*2*runif(n,.8,1.2)
+x4 <- x1*4
+y4 <- x4*2*runif(n,.8,1.2)
 
-# Instructor:	Janos (John) M. Hoenig 
-# Contact:	hoenig@vims.edu  
-#           office: x7125; home: 757 564 9766; cell: 804 815 2912
-
-
-############################################################
-#
-# How to arrange several plots on one page: layout( ), split.screen( ), and
-# par(fig= )).  See also the file called "the wonders of scatterplots.r" for
-# description of pairs() and other similar functions and for info on panel
-# functions.
-#
-############################################################
-
-ans <- read.table(paste(hndl,"Lesson5_anscombe_quartet.txt",sep=''),header=T)
-ans
-x1 <- ans$x1
-y1 <- ans$y1
-x2 <- ans$x2
-y2 <- ans$y2
-x3 <- ans$x3
-y3 <- ans$y3
-x4 <- ans$x4
-y4 <- ans$y4
-
-# To plot several graphs on the same pages there are several approaches that 
-# are mutually incompatible.
-
-# You can indicate in the par() function the mfrow or mfcol
+#  par() 
 par(mfrow=c(4,2))
 plot(x1,y1)
 plot(y1,x1)
@@ -560,114 +307,34 @@ plot(y3,x3)
 plot(x4,y4)
 plot(y4,x4)
 
-#A more versatile approach is to use the layout function
-matrix(c(2,0,1,3),2,2,byrow=T)  # shows we want to draw the first plot at the
+#  layout()
+M=matrix(c(2,0,1,3),2,2,byrow=T)  
+# this shows we want to draw the first plot at the
 # bottom left, the second at top left, the
 # third at bottom right, and we want blank
 # space at top right (indicated by 0)
-layout(matrix(c(2,0,1,3),2,2,byrow=T))
-plot(x1,y1)
-plot(x2,y2)
-plot(x3,y3)
+layout(M)
+plot(x1,y1,col=2,main="1")
+plot(x2,y2,col=3,main="2")
+plot(x3,y3,col=4,main="3")
 
+# other options: 
+# split.screen( ) 
+# par(fig=c(x1,x2,y1,y2))
+```
+<br><br>
 
-# now let's try specifying relative heights
-layout(matrix(c(1,2)), height=c(2,1))
-matrix(c(1,2))  # says we want plot 1 above plot 2
-# This gives a page with two graphs one on top of the other.
-# These two graphs have different proportions: the height of the first is 
-# 2/(2+1); height of the bottom graph is 1/(2+1)
-plot(x1,y1)
-plot(y1,x1)
+# GGPLOT
 
-# This makes for very awkward looking graphs because the width and height 
-# proportions are not respected
-layout(matrix(c(1,2)), height=c(2,1),respect=T)  # "respect" (retain) the
-# original proportions
-plot(x1,y1)
-plot(y1,x1)
+source
 
-# You can also have some graphs occupying more than 1 column or more than 1 row
-layout(rbind(c(1,2),
-             c(1,3)), heights=c(1,1,1))  # says first graph will occupy entire
-# left side (see below)
-plot(x2,y2,las=1)                       # first graph - appears on the left side
-plot(x3,y3,pch=3,las=1) # 2nd graph
-plot(x4,y4)                             # 3rd graph
+http://r-statistics.co/Complete-Ggplot2-Tutorial-Part1-With-R-Code.html
 
+http://r-statistics.co/Complete-Ggplot2-Tutorial-Part2-Customizing-Theme-With-R-Code.html
 
-# Another way to put several graphs on one page is to use split.screen( ) to
-# divide the plotting page.
-# Each figure region can then be subdivided into more regions using the 
-# split.screen( ) function again.
-# The user can call any region in any order and return later on to previously 
-# used regions to add a line, etc.
+http://r-statistics.co/Top50-Ggplot2-Visualizations-MasterList-R-Code.html
 
-split.screen(c(1,2))  # one row, 2 columns         
-screen(1)
-ylimits = range(c(y1,y2))
-xlimits = range(c(x1,x2))
-plot(x2,y2,xlim=xlimits,ylim=ylimits,las=1)
-par(new=T)
-plot(x1,y1,pch=3,xlim=xlimits,ylim=ylimits,ylab="",xlab="",las=1)
-screen(2) # go to screen 2
-split.screen(c(2,1), screen = 2)   # we'll split screen 2 into 2 (then the
-# previous line is not needed
-screen(3)     # screen 3 is now the first screen in the split of screen 2
-plot(x3,y3)
-abline(h=8,lty=3)
-screen(4)    # go to screen 4 (second part of screen 2)
-plot(x4,y4)
-abline(h=7,lty=3)
-
-close.screen(all = TRUE)   # this ends the session creating the graphs.
-
-# One more method for specifying plot locations & sizes: par(fig=c(x1,x2,y1,y2))
-# where x1,y1 give the lower left corner of the plot and x2,y2 give the upper
-# right corner. The units are specified as follows: the lower left corner of the
-# the plot region is the point (0,0) and the top right corner is (1,1).
-
-# let's put two graphs on a page, one in the lower left corner and one in the
-# upper right.                                                          
-
-# start with the graph is the lower left. We specificy the (x,y) values of the
-# lower left and top right corners). You need to know that the bottom left
-# corner of the page is (0,0) and the top right corner is (1,1). 
-par(fig=c(0,.6,0,.6))
-plot(x1,y1)
-par(fig=c(.6,1,.6,1),new=T)  # NOTE: you need to specify new=T or first plot
-# will be erased.
-plot(x2,y2)
-
-# Note that the bottom graph extends up to y = .6 and the top graph extends
-# down to y = .6 but there is a big gap between the graphs. That's because the
-# graphs have margins; we can reset the margins using par(mar= )  You need to
-# know that that the margins are specified in the order: bottom, left, top,
-# right.
-
-par(mar=c(0,0,5,1))    # margins for first graph. (Bottom & left margins are 0)
-par(fig=c(.6,1,.6,1))
-plot(x2,y2)
-mtext("top right graph")
-par(mar=c(5,5,0,0))      # margins for second graph  (top & right margins are 0)
-par(fig=c(0,.6,0,.6),new=T)
-plot(x1,x2)
-mtext("bottom left graph")
-# add one more graph
-par(mar=c(4,1,0,0),fig=c(.4,.58,.15,.35),new=T)
-plot(x3,y3)
-
-
-
-
-
-#-----#GGPLOT--------------------
-
-#source
-#http://r-statistics.co/Complete-Ggplot2-Tutorial-Part1-With-R-Code.html
-#http://r-statistics.co/Complete-Ggplot2-Tutorial-Part2-Customizing-Theme-With-R-Code.html
-# http://r-statistics.co/Top50-Ggplot2-Visualizations-MasterList-R-Code.html
-
+```{r}
 library(ggplot2)
 
 #Basic map to understand ggplot syntax
@@ -683,8 +350,9 @@ head(midwest,2)
 
 # what happened?
 # A blank ggplot is drawn. Even though the x and y are specified,
-#  there are no points or lines in it. This is because, ggplot doesn’t
-#  assume that you meant a scatterplot or a line chart to be drawn.
+#  there are no points or lines in it. This is because, ggplot 
+#  doesn’tassume that you meant a scatterplot or a line chart 
+#  to be drawn.
 #Also note that aes() function is used to specify the X and Y axes
 
 
@@ -708,11 +376,11 @@ g + xlim(c(0, 0.1)) + ylim(c(0, 1000000))
 
 #6. Adjust X and Y by zooming in 
 # (this does not delete points outside X and Y range)
-g1 <- g + coord_cartesian(xlim=c(0,0.1), ylim=c(0, 1000000))  # zooms in
+g1 <- g + coord_cartesian(xlim=c(0,0.1), ylim=c(0, 1000000))  # zoom in
 plot(g1)
 
-#Since all points were considered, the line of best fit did not change
-# compare to previous graph....
+#Since all points were considered, the line of best fit did 
+# not change compare to previous graph....
 
 
 #7. Change title and axis lables
@@ -728,7 +396,7 @@ g1 +
 
 #8. Change color and size of points
 ggplot(midwest, aes(x=area, y=poptotal)) + 
-  geom_point(col="steelblue", size=3) +   # Set static color and size for points
+  geom_point(col="steelblue", size=3) +   # Set point color and size
   geom_smooth(method="lm", col="firebrick") +  # change the color of line
   coord_cartesian(xlim=c(0, 0.1), ylim=c(0, 1000000)) + 
   labs(title="Area Vs Population", 
@@ -860,6 +528,8 @@ g_pic <- rasterGrob(tiger, interpolate=TRUE)
   #add image to graph
 g+ annotation_custom(g_pic , xmin=5, xmax=7, ymin=30, ymax=45)
 ggsave("C:/Matias/Cursos/2019_Mexico/Plots_Maps/tiger.png", width = 6, height = 6, dpi = "screen")
+
+```
 
 #-----Base mapping--------------------
 

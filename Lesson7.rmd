@@ -230,8 +230,8 @@ ggplot(data=data.scores) +
 adon.results<-adonis(all.sites ~ trt, method="bray",perm=999)
 print(adon.results)
 
-#So there are S differences between control and high 
-#....(whatever high is)
+#So there are S differences between control, low and high 
+#....(whatever low and high are)
 
 
 #Let's run this thru anosim()

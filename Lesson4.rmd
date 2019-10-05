@@ -57,7 +57,7 @@ pre {
 
 
 ```{r globaloptions, include=FALSE}
-knitr::opts_chunk$set(fig.width = 6,fig.height = 6,
+knitr::opts_chunk$set(fig.width = 6,fig.height = 6,error=TRUE,
                         echo = TRUE, warning=FALSE,message=FALSE)
 ```
 # Lesson goals
