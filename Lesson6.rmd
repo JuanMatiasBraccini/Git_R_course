@@ -68,8 +68,8 @@ We're going to expand on doing plots and maps.
 
 full list of packages necessary for this series of tutorials can be installed with:
 
-install.packages(c("cowplot", "googleway", "ggplot2", "ggrepel", "maps","rgeos","grid","ggspatial", "libwgeom", "sf", "rnaturalearth", "rnaturalearthdata","rsvg","magick")
-
+install.packages(c("cowplot", "googleway", "ggplot2", "ggrepel", "maps","rgeos","grid","ggspatial", "libwgeom", "sf", "rnaturalearth", "rnaturalearthdata","rsvg","magick","PBSmapping","tmap","spData",
+"mapview", "leaflet")
 
 # Base Plotting
 Credits to John Hoenig
@@ -79,7 +79,7 @@ Credits to John Hoenig
 
 #type ?par
 plot(1:10)
-par(bg=3,cex.axis=2,cex.lab=3,col=4,
+par(bg=3,cex.axis=2,cex.lab=3,
     col.axis="steelblue",fg="white",
     font.axis=2,las=3)
 plot(1:10)
@@ -211,14 +211,12 @@ demo.pal(20)
 
 ## 5. 3d graphs
 ```{r}
-# There are some other graphical functions
-#  of interest in the lattice and MASS
-#  packages. Here's a table summarizing 
-#  availability of functions in the
-#  graphics package (which comes with R, 
-#  you don't have to load it) and the
-#  MASS & lattice packages (which you have 
-#  to load, e.g., using library(MASS) ).
+# There are some other graphical functions of interest in the
+#   lattice and MASS packages. 
+#  Here's a table summarizing availability of functions in
+#   the graphics package (which comes with R)
+#   and the MASS & lattice packages, which you have 
+#   to load, e.g., using library(MASS)
 
 # METHOD                  IN (graphics)         IN (package)
 #
@@ -234,7 +232,7 @@ demo.pal(20)
 # segment plot            stars
 # interactive 3D graphics                       (rggobi), (rgl)
 
-# Contour plot
+# For example, let's do a contour plot
 x <- -6:16
 op <- par(mfrow = c(2, 2),mar=c(2,2,1,1))
 contour(outer(x, x), method = "edge", vfont = c("sans serif", "plain"))
@@ -249,14 +247,14 @@ contour(x, x, z, ylim = c(-6, 6), nlev = 20, lty = 2, method = "simple",
 
 ```
 
+
 ## 6. Expressions
 ```{r}
-# Here we will use the paste() and expression() 
-# functions to print text and
-# equations that incorporate special 
+# Here we will use the paste() and expression() functions to print
+#  text and equations that incorporate special 
 # symbols and mathematical notation.
 
-#?expression    # the help page is highly unreadable!
+#?expression    # the help page is not very useful...
 
 # expression() creates an expression that can be printed.
 # It does it by translating code for equations and 
@@ -266,19 +264,18 @@ contour(x, x, z, ylim = c(-6, 6), nlev = 20, lty = 2, method = "simple",
 
 # try executing these commands
 
-plot(0,0,col=0,xlim=c(0,20),ylim=c(0,20))  # set up any plot so we can
-# annotate it
+plot(0,0,col=0,xlim=c(0,20),ylim=c(0,20))  # set up a plot
+
+#add some expressions
 text(10,20,paste("likelihood = ",pi^3*(1-pi)^7),cex=1.5)   
 text(10,17,paste("likelihood = ","pi^3*(1-pi)^7"),cex=1.5)
 text(10,14,expression(paste("likelihood = ",pi^3*(1-pi)^7)),cex=1.5)
-
 text(10,10,expression(paste("area = ",pi * r^2)))
-
 text(10,7,expression(paste("f(x) = ",1/sqrt(2*pi * sigma)*exp(- 1/(2*sigma^2)*(x - mu)^2))))
 text(10,5,expression(paste("f(x) = ",1/sqrt(2*pi * sigma)*e^- 1/(2*sigma^2)*(x - mu)^2)))
 text(10,3,expression(paste("f(x) = ",1/sqrt(2*pi * sigma)*exp(- (x - mu)^2/(2*sigma^2)))))
 
-# instruction manual for typsetting equations
+# instruction manual for typsetting equations:
 # demo(plotmath)    
 
 ```
@@ -309,14 +306,15 @@ plot(y4,x4)
 
 #  layout()
 M=matrix(c(2,0,1,3),2,2,byrow=T)  
+M
 # this shows we want to draw the first plot at the
 # bottom left, the second at top left, the
 # third at bottom right, and we want blank
 # space at top right (indicated by 0)
 layout(M)
-plot(x1,y1,col=2,main="1")
-plot(x2,y2,col=3,main="2")
-plot(x3,y3,col=4,main="3")
+plot(x1,y1,main="graph 1")
+plot(x2,y2,main="graph 2")
+plot(x3,y3,main="graph 3")
 
 # other options: 
 # split.screen( ) 
@@ -337,26 +335,27 @@ http://r-statistics.co/Top50-Ggplot2-Visualizations-MasterList-R-Code.html
 ```{r}
 library(ggplot2)
 
-#Basic map to understand ggplot syntax
+#Basics of ggplot syntax:
 
 #1. load some data
 data("midwest", package = "ggplot2") 
 
 
-#2.  Init Ggplot
+#2.  Initiate ggplot
 ggplot(midwest, aes(x=area, y=poptotal))
 # area and poptotal are columns in 'midwest'
 head(midwest,2)
 
 # what happened?
 # A blank ggplot is drawn. Even though the x and y are specified,
-#  there are no points or lines in it. This is because, ggplot 
-#  doesn’tassume that you meant a scatterplot or a line chart 
-#  to be drawn.
-#Also note that aes() function is used to specify the X and Y axes
+#  there are no points or lines in it. 
+# This is because, ggplot doesn’t assume that you meant a
+#  scatterplot or a line chart to be drawn.
+# Basically, we have to build the ggplot adding layer by layer
+#The aes() function is used to specify the X and Y axes
 
 
-#3. Let's make simple scaterplot
+#3. Let's make a simple scaterplot
 ggplot(midwest, aes(x=area, y=poptotal)) +
   geom_point()
 
@@ -365,18 +364,20 @@ ggplot(midwest, aes(x=area, y=poptotal)) +
 g <- ggplot(midwest, aes(x=area, y=poptotal)) + 
   geom_point() + 
   geom_smooth(method="lm")  # set se=FALSE to turnoff confidence bands
+#note that I saved the ggplot to an object ("g") and then plotted 'g'
+
 plot(g)
-#note how I saved the ggplot to an object ("g") and the plotted 'g'
 
 
-#5. Adjust X and Y
+
+#5. Adjust X and Y by setting the axes' limits
 g + xlim(c(0, 0.1)) + ylim(c(0, 1000000))
-#note how I recall 'g' and built on top...
+#note how I recall 'g' and build on top...
 
 
 #6. Adjust X and Y by zooming in 
-# (this does not delete points outside X and Y range)
-g1 <- g + coord_cartesian(xlim=c(0,0.1), ylim=c(0, 1000000))  # zoom in
+# (this does not delete points outside the X and Y range)
+g1 <- g + coord_cartesian(xlim=c(0,0.1), ylim=c(0, 1000000))  
 plot(g1)
 
 #Since all points were considered, the line of best fit did 
@@ -408,7 +409,8 @@ ggplot(midwest, aes(x=area, y=poptotal)) +
 
 #9. Change color to reflect categories in another column
 gg <- ggplot(midwest, aes(x=area, y=poptotal)) + 
-  geom_point(aes(col=state), size=3) +  # Set color to vary based on state categories.
+  geom_point(aes(col=state), size=3) +  # Set color to vary based 
+                                        # on state categories.
   geom_smooth(method="lm", col="firebrick", size=2) + 
   coord_cartesian(xlim=c(0, 0.1), ylim=c(0, 1000000)) + 
   labs(title="Area Vs Population", 
@@ -417,7 +419,9 @@ gg <- ggplot(midwest, aes(x=area, y=poptotal)) +
        x="Area", 
        caption="Midwest Demographics")
 plot(gg)
-#Now each point is colored based on the state it belongs because of aes(col=state).
+#Now each point is colored based on the state it belongs because 
+# of aes(col=state).
+
 # Not just color, but size, shape, stroke (thickness of boundary) 
 #  and fill (fill color) can be used to discriminate groupings.
 
@@ -435,7 +439,7 @@ head(brewer.pal.info, 10)
 #9. Change axis text and ticks location
 gg + scale_x_continuous(breaks=seq(0, 0.1, 0.01)) #change tick location
 gg + scale_x_continuous(breaks=seq(0, 0.1, 0.01),
-                        labels = letters[1:11])  #change tick location and name
+                 labels = letters[1:11])  #change tick location and name
 
 #10. Reverse the X Axis Scale
 gg + scale_x_reverse()
@@ -449,8 +453,8 @@ gg + theme_dark() + labs(subtitle="Dark Theme")
 
 #12. Add plot components
 gg <- ggplot(midwest, aes(x=area, y=poptotal)) + 
-  geom_point(aes(col=state, size=popdensity)) + #changed points color and size
-  geom_smooth(method="loess", se=F) +   #added smoothing spline
+  geom_point(aes(col=state, size=popdensity)) + #change points color & size
+  geom_smooth(method="loess", se=F) +   #add smoothing spline
   xlim(c(0, 0.1)) +
   ylim(c(0, 500000)) + 
   labs(title="Area Vs Population", y="Population",
@@ -481,15 +485,17 @@ gg + theme(plot.title=element_text(size=20,
 
 #14. Modify legend and add text
 midwest_sub <- midwest[midwest$poptotal > 300000, ]
-midwest_sub$large_county <- ifelse(midwest_sub$poptotal > 300000, midwest_sub$county, "")
+midwest_sub$large_county <- ifelse(midwest_sub$poptotal > 300000, 
+                              midwest_sub$county, "")
 
 gg + geom_text(aes(label=large_county), size=2, data=midwest_sub) +
   labs(subtitle="With ggplot2::geom_text") +
   guides(color=guide_legend("State"), size=guide_legend("Density"))  
 
 #move text so we can actually see it and remove legends
-library(ggrepel)
-gg + geom_label_repel(aes(label=large_county), size=2, data=midwest_sub) +
+library(ggrepel)  #we need this library to move the test
+gg + geom_label_repel(aes(label=large_county), size=2, 
+                      data=midwest_sub) +
      labs(subtitle="With ggrepel::geom_label_repel") +
      theme(legend.position = "None")
 
@@ -502,17 +508,21 @@ g <- ggplot(mpg, aes(x=displ, y=hwy)) +
   labs(title="hwy vs displ", caption = "Source: mpg") +
   geom_smooth(method="lm", se=FALSE) + 
   theme_bw()  # apply bw theme
+  
+  #single plot
 plot(g)
 
-  #same scale
+  #multiplot with the same scale for each plot
 g + facet_wrap( ~ class, nrow=3) + 
   labs(title="hwy vs displ", caption = "Source: mpg", 
-       subtitle="Ggplot2 - Faceting - Multiple plots in one figure")  # Shared scales
+       subtitle="Ggplot2 - Faceting - 
+                Multiple plots in one figure")  
 
-# Facet wrap with free scales
+# multiplot with free scales
 g + facet_wrap( ~ class, scales = "free") +
   labs(title="hwy vs displ", caption = "Source: mpg",
-       subtitle="Ggplot2 - Faceting - Multiple plots in one figure with free scales")  
+       subtitle="Ggplot2 - Faceting - Multiple plots 
+                  in one figure with free scales")  
 
 
 #16. Add an image
@@ -520,33 +530,156 @@ library(grid)
 library(magick)
 
   #import tiger image
-tiger <- image_read_svg('http://jeroen.github.io/images/tiger.svg', width = 350)
+tiger <- image_read_svg('http://jeroen.github.io/images/tiger.svg', 
+                        width = 350)
 
   #convert image to raster
 g_pic <- rasterGrob(tiger, interpolate=TRUE)
 
   #add image to graph
 g+ annotation_custom(g_pic , xmin=5, xmax=7, ymin=30, ymax=45)
-ggsave("C:/Matias/Cursos/2019_Mexico/Plots_Maps/tiger.png", width = 6, height = 6, dpi = "screen")
+ggsave("C:/Matias/Cursos/2019_Mexico/Plots_Maps/tiger.png", width = 6,
+       height = 6, dpi = "screen")
 
 ```
 
-#-----Base mapping--------------------
+# PBS mapping
+PBS stands for Pacific Biological Station (PBS) in Nanaimo, British Columbia, Canada
+...many packages created there...
+
+I learnt to do maps with this package >10 years ago and I'm sticking to it...still haven't come across something I couldn't do.
+
+```{r}
+library(PBSmapping)
+data(worldLLhigh)  #read in in shape file of the world
+dev.off() 
+
+#plot the world
+plotMap(worldLLhigh)
+
+#plot Australia and ad some color
+OZ.lat=c(-44.5,-11) #lat and long ranges of interest
+OZ.long=c(113,155)
+plotMap(worldLLhigh, xlim=OZ.long,ylim=OZ.lat,
+        col=rainbow(10))
+
+# Add some text and locations
+Perth=c(115.866,-31.95)
+
+plotMap(worldLLhigh, xlim=OZ.long,ylim=OZ.lat,
+        col="orange")
+points(Perth[1],Perth[2],pch=19,cex=1.25)
+text(Perth[1],Perth[2],"Perth",pos=4)
+
+#change axis ticks
+plotMap(worldLLhigh, xlim=OZ.long,ylim=OZ.lat,
+col="orange",tck = 0.05, tckMinor = 0.015)
+
+#add nicer axis and a box
+par(mar=c(3,2,.1,.1),oma=c(2,2,1,1),las=1)
+plotMap(worldLLhigh, xlim=OZ.long,ylim=OZ.lat,
+col="orange",xlab="",ylab="",axes=F)
+axis(side=1,at = seq(OZ.long[1],OZ.long[2],1), 
+     labels = F,tcl=.25)
+axis(side=1,at = seq(OZ.long[1],OZ.long[2],2), 
+     labels = seq(OZ.long[1],OZ.long[2],2),tcl=-.75)
+axis(side=2,at = seq(OZ.lat[1],OZ.lat[2],1), 
+     labels = F,tcl=.25)
+axis(side=2,at = seq(OZ.lat[1],OZ.lat[2],2), 
+     labels = -round(seq(OZ.lat[1],OZ.lat[2],2)),tcl=-.75)
+mtext(expression(paste("Latitude (",degree,"S)",sep="")),
+      side=2,line=3,las=3,cex=1.1)
+mtext(expression(paste("Longitude (",degree,"E)",sep="")),
+        side=1,line=3,cex=1.1)
+ 
+box()
 
 
+#add a polygon
+dev.off()
+South.WA.lat=c(-36,-25); South.WA.long=c(112,129)
+S.WA.long=c(South.WA.long[2], South.WA.long[2], 
+            South.WA.long[1], South.WA.long[1])
+S.WA.lat=c(South.WA.lat[2], South.WA.lat[1], 
+           South.WA.lat[1], South.WA.lat[2])
+
+plotMap(worldLLhigh, xlim=OZ.long,ylim=OZ.lat,
+        col="steelblue")
+polygon(x=S.WA.long,y=S.WA.lat,lwd=1.5,
+        col=rgb(.1,1,.1,alpha=.4))
+  
+#Add some spatial catch information
+N=100
+sp.ktc=data.frame(
+  Long=runif(N,118,135),
+  Lat=runif(N,-37,-35),
+  Ktch=rnorm(N,2,.5)
+    )
+plotMap(worldLLhigh, xlim=c(113,140),ylim=c(-38,-25),
+        col="steelblue")
+with(sp.ktc,points(Long,Lat,pch=21,col="red",bg="yellow",
+                   cex=2*Ktch/max(Ktch)))
+
+#add legend
+Show=quantile(sp.ktc$Ktch,probs=c(.01,.99))
+legend("topright",paste(round(Show,2)),cex=2,
+       bty='n',pch=21,col="red",pt.bg = "yellow",
+       pt.cex=2*Show/max(sp.ktc$Ktch))
+
+#locator()   #get data from plot  
+
+#Export map
+tiff(file="C:/Matias/Cursos/2019_Mexico/Plots_Maps/PBS_map1.tiff",
+     width=2400,height=2400,units="px",res=300,compression="lzw")
+plotMap(worldLLhigh, xlim=c(113,140),ylim=c(-38,-25),
+        col="steelblue")
+dev.off()
+
+#what happens if we change the height and width?
+tiff(file="C:/Matias/Cursos/2019_Mexico/Plots_Maps/PBS_map2.tiff",
+     width=1200,height=2400,units="px",res=300,compression="lzw")
+plotMap(worldLLhigh, xlim=c(113,140),ylim=c(-38,-25),
+        col="steelblue")
+dev.off()
+
+jpeg(file="C:/Matias/Cursos/2019_Mexico/Plots_Maps/PBS_map1.jpeg",
+     width=2000,height=2000,units="px",res=300)
+plotMap(worldLLhigh, xlim=c(113,140),ylim=c(-38,-25),
+        col="steelblue")
+dev.off()
+
+pdf(file="C:/Matias/Cursos/2019_Mexico/Plots_Maps/PBS_map1.pdf")
+plotMap(worldLLhigh, xlim=c(113,140),ylim=c(-38,-25),
+        col="steelblue")
+dev.off()
+
+```
+
+<br><br>
+
+# Mapping with ggplot and sf
+
+(note: As with many things in R, there are several other packages (e.g. sp, ggmap) for mapping and GIS, choose your pick...)
+
+source:
+
+https://www.r-spatial.org/r/2018/10/25/ggplot2-sf.html
+
+https://www.r-spatial.org/r/2018/10/25/ggplot2-sf-2.html
 
 
-#-----ggplot MAPPING--------------------
-#source:
-#  https://www.r-spatial.org/r/2018/10/25/ggplot2-sf.html
-#  https://www.r-spatial.org/r/2018/10/25/ggplot2-sf-2.html
-
+```{r}
 library("ggplot2")
-theme_set(theme_bw()) #classic dark-on-light theme for ggplot2 (good for maps) check other themes in ?ggtheme
+
+#set up theme
+theme_set(theme_bw()) 
+# this is a classic dark-on-light theme (good for maps) 
+# check other themes in ?ggtheme
 
 library("sf")
 
-# The package rnaturalearth provides a map of countries of the entire world. 
+# The package rnaturalearth provides a map of 
+#  countries of the entire world (the shape file) 
 library("rnaturalearth")
 library("rnaturalearthdata")
 
@@ -557,81 +690,96 @@ library("rnaturalearthdata")
 world <- ne_countries(scale = "medium", returnclass = "sf")
 class(world)
 
-#First, create a base map of the world using ggplot2.
+#1st, create a base map of the world using ggplot2.
 # This base map will then be extended with different map elements
 ggplot(data = world) +
        geom_sf()
-#note that layers are added one at a time in ggplot... type just ggplot(data = world)
+#remember that layers are added one at a time in ggplot... 
+#  type just ggplot(data = world)
 
-#add title and change countries' color
+
+#2nd, title and change countries' color
 ggplot(data = world) +
   geom_sf(color = "orange", fill = "pink") +
   xlab("Longitude") + ylab("Latitude") +
-  ggtitle("World map", subtitle = paste0("(", length(unique(world$name)), " countries)"))
+  ggtitle("World map", 
+      subtitle = paste0("(", length(unique(world$name)),
+                        " countries)"))
 
-
-#or maybe use color according to population size of each country
+#...or maybe use color according to country population size 
 ggplot(data = world) +
   geom_sf(aes(fill = pop_est)) +
   scale_fill_viridis_c(option = "plasma", trans = "sqrt")
-#here it is using the pop_est to fill a gradient...
+
+#ggplot is using the pop_est to fill a gradient...
 world$pop_est[1:5]
 
 
-#change map projection
+#3rd, change map projection
 ggplot(data = world) +
   geom_sf() +
-  coord_sf(crs = "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs ")
+  coord_sf(crs = "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 
+           +y_0=3210000 +ellps=GRS80 +units=m +no_defs ")
 #the function 'coord_sf' allows to deal with the coordinate system, 
 # which includes both projection and extent of the map.
 
-#Zoom in into the Gulf of Mexico
+
+#4th, zoom in into the Gulf of Mexico
 ggplot(data = world) +
   geom_sf() +
-  coord_sf(xlim = c(-102.15, -74.12), ylim = c(7.65, 33.97), expand = T)
-# The extent of the map can also be set in coord_sf, in practice allowing to “zoom” 
-# in the area of interest, provided by limits on the x-axis (xlim), and on the y-axis (ylim)
-       
+  coord_sf(xlim = c(-102.15, -74.12), 
+           ylim = c(7.65, 33.97), expand = T)
+# The extent of the map can also be set in coord_sf, 
+#  allowing to “zoom” in the area of interest, provided by
+#  limits on the x-axis (xlim), and on the y-axis (ylim)
 
-#Add scale bar
-library("ggspatial")
+
+#5th, add scale bar
+library("ggspatial")  #need for scale bar
 ggplot(data = world) +
   geom_sf() +
   annotation_scale(location = "bl", width_hint = 0.5) +
-  annotation_north_arrow(location = "bl", which_north = "true", 
-                         pad_x = unit(0.75, "in"), pad_y = unit(0.5, "in"),
-                         style = north_arrow_fancy_orienteering) +
+  annotation_north_arrow(location = "bl",
+          which_north = "true", pad_x = unit(0.75, "in"), 
+          pad_y = unit(0.5, "in"),
+          style = north_arrow_fancy_orienteering) +
   coord_sf(xlim = c(-102.15, -74.12), ylim = c(7.65, 33.97))
 
 
-#Add text (e.g. country name)
+#6th, add some text (e.g. country name)
 # The world data set already contains country names 
-# and the coordinates of the centroid of each country (among more information)
+# and the coordinates of the centroid of each country 
+#  (among more information)
 
-world_points<- st_centroid(world)   #function from package 'sf'
-world_points <- cbind(world, st_coordinates(st_centroid(world$geometry)))
+world_points<- st_centroid(world)   #from package 'sf'
+world_points <- cbind(world, 
+                      st_coordinates(st_centroid(world$geometry)))
 
 ggplot(data = world) +
   geom_sf() +
   geom_text(data= world_points,aes(x=X, y=Y, label=name),
-            color = "darkblue", fontface = "bold", size = 4, check_overlap = FALSE) +
+            color = "darkblue", fontface = "bold", size = 4,
+            check_overlap = FALSE) +
   annotate(geom = "text", x = -90, y = 26, label = "Gulf of Mexico", 
            fontface = "italic", color = "grey22", size = 4) +
-  coord_sf(xlim = c(-102.15, -74.12), ylim = c(7.65, 33.97), expand = FALSE)
+  coord_sf(xlim = c(-102.15, -74.12), ylim = c(7.65, 33.97), 
+           expand = FALSE)
 
 
-#Final map
+#7th, put everything together
 ggplot(data = world) +
   geom_sf(fill= 'antiquewhite') +
   geom_text(data= world_points,aes(x=X, y=Y, label=name),
-            color = 'darkblue', fontface = 'bold', check_overlap = FALSE) +
-  annotate(geom = 'text', x = -90, y = 26, label = 'Gulf of Mexico',
+            color = 'darkblue', fontface = 'bold', 
+            check_overlap = FALSE) +
+  annotate(geom='text',x=-90,y=26,label='Gulf of Mexico',
            fontface = 'italic', color = 'grey22', size = 6) +
   annotation_scale(location = 'bl', width_hint = 0.5) +
   annotation_north_arrow(location = 'bl', which_north = 'true', 
           pad_x = unit(0.75, 'in'), pad_y = unit(0.5, 'in'),
           style = north_arrow_fancy_orienteering) +
-  coord_sf(xlim = c(-102.15, -74.12), ylim = c(7.65, 33.97), expand = FALSE) +
+  coord_sf(xlim = c(-102.15, -74.12), ylim = c(7.65, 33.97), 
+           expand = FALSE) +
   xlab('Longitude') + ylab('Latitude') + 
   ggtitle('Map of the Gulf of Mexico and the Caribbean Sea') +
   theme(panel.grid.major = element_line(color = gray(.5),
@@ -639,13 +787,14 @@ ggplot(data = world) +
         panel.background = element_rect(fill = 'aliceblue'))
 
 
-#Saving the map 
+#Finally, export the map 
 ggsave("C:/Matias/Cursos/2019_Mexico/Plots_Maps/map.pdf")
-ggsave("C:/Matias/Cursos/2019_Mexico/Plots_Maps/map_web.png", width = 6, height = 6, dpi = "screen")
+ggsave("C:/Matias/Cursos/2019_Mexico/Plots_Maps/map_web.png",
+       width = 6, height = 6, dpi = "screen")
 #ggsave saves that last map on display....
 
 
-#Add some field sites (point data)
+#What if we want to add some field sites (e.g. point data)?
 
 #create the site data
 (sites <- data.frame(longitude = c(-80.144005, -80.109), 
@@ -654,21 +803,25 @@ ggsave("C:/Matias/Cursos/2019_Mexico/Plots_Maps/map_web.png", width = 6, height 
 #quickest way to add points to map
 ggplot(data = world) +
   geom_sf() +
-  geom_point(data = sites, aes(x = longitude, y = latitude), size = 4, 
-             shape = 23, fill = "darkred") +
-  coord_sf(xlim = c(-88, -78), ylim = c(24.5, 33), expand = FALSE)
+  geom_point(data = sites, aes(x = longitude, y = latitude),
+             size = 4, shape = 23, fill = "darkred") +
+  coord_sf(xlim = c(-88, -78), ylim = c(24.5, 33), 
+           expand = FALSE)
 
-#more flexible way, use 'sf' to convert sites to a coordinate system 
+#more flexible way... 
+#  use 'sf' to convert sites to a coordinate system 
 #   (e.g. more useful if changing projections)
 (sites <- st_as_sf(sites, coords = c("longitude", "latitude"), 
                    crs = 4326, agr = "constant"))
 ggplot(data = world) +
   geom_sf() +
-  geom_sf(data = sites, size = 4, shape = 23, fill = "darkred") +
-  coord_sf(xlim = c(-88, -78), ylim = c(24.5, 33), expand = FALSE)
+  geom_sf(data = sites, size = 4, shape = 23, 
+          fill = "darkred") +
+  coord_sf(xlim = c(-88, -78), ylim = c(24.5, 33), 
+           expand = FALSE)
 
 
-#Polygon data (e.g. States)
+#Add polygon data (e.g. States)
 library("maps")   #only useful if plotting USA stuff...
               # used here for illustrative purposes...
 states <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
@@ -680,7 +833,8 @@ ggplot(data = world) +
   geom_sf() +
   geom_sf(data = states, fill = NA) + 
   geom_text(data = states, aes(X, Y, label = ID), size = 5) +
-  coord_sf(xlim = c(-88, -78), ylim = c(24.5, 33), expand = FALSE)
+  coord_sf(xlim = c(-88, -78), ylim = c(24.5, 33), 
+           expand = FALSE)
 
 #move state name a bit
 states$nudge_y <- -1
@@ -689,13 +843,15 @@ states$nudge_y[states$ID == "South Carolina"] <- -1.5
 ggplot(data = world) +
   geom_sf() +
   geom_sf(data = states, fill = NA) + 
-  geom_label(data = states, aes(X, Y, label = ID), size = 5, fontface = "bold", 
-             nudge_y = states$nudge_y) +
-  coord_sf(xlim = c(-88, -78), ylim = c(24.5, 33), expand = FALSE)
+  geom_label(data = states, aes(X, Y, label = ID),size = 5,
+             fontface = "bold", nudge_y = states$nudge_y) +
+  coord_sf(xlim = c(-88, -78), ylim = c(24.5, 33),
+           expand = FALSE)
 
 
 #highlight different counties (polygons...)
-counties <- st_as_sf(map("county", plot = FALSE, fill = TRUE))
+counties <- st_as_sf(map("county", plot = FALSE,
+                         fill = TRUE))
 counties <- subset(counties, grepl("florida", counties$ID))
 counties$area <- as.numeric(st_area(counties))
 
@@ -703,57 +859,73 @@ counties$area <- as.numeric(st_area(counties))
 ggplot(data = world) +
   geom_sf() +
   geom_sf(data = counties, fill = NA, color = gray(.5)) +   
-  coord_sf(xlim = c(-88, -78), ylim = c(24.5, 33), expand = FALSE)
+  coord_sf(xlim = c(-88, -78), ylim = c(24.5, 33),
+           expand = FALSE)
 
-#show counties by some property (e.g. area; in our case, some random variable)
+#show counties by some property 
+#  (e.g. area; in our case, some random variable)
+Area=runif(length(counties$ID),1,10)
 ggplot(data = world) +
   geom_sf() +
-  geom_sf(data = counties, aes(fill = runif(length(counties$ID),1,10))) +
+  geom_sf(data = counties, aes(fill = Area)) +
   scale_fill_viridis_c(trans = "sqrt", alpha = .4) +
-  coord_sf(xlim = c(-88, -78), ylim = c(24.5, 33), expand = FALSE)
+  coord_sf(xlim = c(-88, -78), ylim = c(24.5, 33),
+           expand = FALSE)
 
 
 #Show more specific data points
-flcities <- data.frame(state = rep("Florida", 5), 
-                       city = c("Miami","Tampa", "Orlando", "Jacksonville", "Sarasota"),
-                       lat = c(25.7616798,27.950575, 28.5383355, 30.3321838, 27.3364347),
-                       lng = c(-80.1917902,-82.4571776, -81.3792365, -81.655651, -82.5306527))
+flcities <- data.frame(
+  state = rep("Florida", 5), 
+  city = c("Miami","Tampa", "Orlando", "Jacksonville", "Sarasota"),
+  lat = c(25.7616798,27.950575, 28.5383355, 30.3321838, 27.3364347),
+  lng = c(-80.1917902,-82.4571776, -81.3792365, -81.655651, -82.5306527))
 
-(flcities <- st_as_sf(flcities, coords = c("lng", "lat"), remove = FALSE, 
+(flcities <- st_as_sf(flcities,coords=c("lng","lat"),remove=FALSE, 
                       crs = 4326, agr = "constant"))
 ggplot(data = world) +
   geom_sf() +
   geom_sf(data = counties, fill = NA, color = gray(.5)) +
   geom_sf(data = flcities) +
-  geom_text(data = flcities, aes(x = lng, y = lat, label = city), 
-            size = 3.9, col = "black", fontface = "bold") +
+  geom_text(data = flcities, aes(x = lng, y = lat,
+        label = city), size = 3.9, col = "black", fontface = "bold") +
   coord_sf(xlim = c(-88, -78), ylim = c(24.5, 33), expand = FALSE)
 
+#...doesn't look that good, 
 
-#doesn't look that good, let's move the legend
+# let's move the legend..
 library("ggrepel")
+ 
 ggplot(data = world) +
   geom_sf() +
   geom_sf(data = counties, fill = NA, color = gray(.5)) +
   geom_sf(data = flcities) +
-  geom_text_repel(data = flcities, aes(x = lng, y = lat, label = city), 
-                  fontface = "bold", nudge_x = c(1, -1.5, 2, 2, -1),
+  geom_text_repel(data = flcities, aes(x = lng, y = lat,
+                  label = city),fontface = "bold", 
+                  nudge_x = c(1, -1.5, 2, 2, -1),
                   nudge_y = c(0.25,-0.25, 0.5, 0.5, -0.5)) +
-  coord_sf(xlim = c(-88, -78), ylim = c(24.5, 33), expand = FALSE)
+  coord_sf(xlim = c(-88, -78), ylim = c(24.5, 33), 
+           expand = FALSE)
 
+```
 
-#-----Another approach. tmap--------------------
-#source:
-#  https://geocompr.robinlovelace.net/adv-map.html
+<br><br>
 
-install.packages(c("tmap","spData"))
+# Another nice approach: tmap
+
+source:
+
+https://geocompr.robinlovelace.net/adv-map.html
+
+```{r}
 library(tmap)
 library(spData)
 
-#Just like ggplot2, tmap is based on the idea of a ‘grammar of graphics’
-# This involves a separation between the input data and the aesthetics 
-# (how data are visualised): each input dataset can be ‘mapped’ in a 
-# range of different ways including location on the map (defined by 
+#Just like ggplot2, tmap is based on the idea of 
+#  a ‘grammar of graphics’ 
+#This involves a separation between the input data 
+#  and the aesthetics (how data are visualised): each
+#  input dataset can be ‘mapped’ in a range of 
+#  different ways including location on the map (defined by 
 # data’s geometry), color, and other visual variables.
 
 
@@ -770,24 +942,37 @@ nz=tm_shape(nz) +
   tm_fill() +
   tm_borders() 
 nz
-  
-#many more useful features, including how to animate maps..
-# ...check here:
-#  https://geocompr.robinlovelace.net/adv-map.html
 
-#-----mapview- interactive maps--------------------
-#install.packages(c("mapview", "leaflet"))
+```
+many more useful features, including how to animate maps..
+
+...check here:
+
+https://geocompr.robinlovelace.net/adv-map.html
+
+
+<br><br>
+
+
+# Mapview: interactive maps
+```{r}
 library(mapview)
 library(leaflet)
 m=mapview(breweries)
 
-m2=leaflet() %>% addProviderTiles("OpenStreetMap") %>% addExtent(breweries) 
+m2=leaflet() %>% 
+  addProviderTiles("OpenStreetMap") %>%
+  addExtent(breweries) 
 
 #save as html
-mapshot(m, url = paste0('C:/Matias/Cursos/2019_Mexico/Plots_Maps', "/map.html"))
-mapshot(m2, url = paste0('C:/Matias/Cursos/2019_Mexico/Plots_Maps', "/map2.html"))
+mapshot(m, url = paste0('C:/Matias/Cursos/2019_Mexico/Plots_Maps',
+                        "/map.html"))
+mapshot(m2, url = paste0('C:/Matias/Cursos/2019_Mexico/Plots_Maps',
+                         "/map2.html"))
 
 
 #can also use tmap
 tmap_mode("view")
 nz
+
+```

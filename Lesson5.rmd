@@ -1198,408 +1198,247 @@ with(aggcomb2,plot(year,catch,ylim=c(0,max(catch.uppCL)),pch=19,
      ylab="Catch",xlab="Year"))
 with(aggcomb2,arrows(year, catch.lowCL, year,catch.uppCL,code=3,
                      angle=90, length=0.02))
-
-
-
-
-
-
 ```
 <br><br>
 
 
-
-DEJE ACA
-
-
-<br>
-
-## Student task
-* Create a new data frame equal to dat
-* Calculate mean and SE of the variables 'days' and 'catch' by 'year'
-* In one page, Plot mean days (and 95% CI) by year and mean catch (and 95% CI) by year 
-
-this time...Use dplyr 
-<br>
-
-
-
-
-##=============================================================
 ## Summarising in the "dplyr" package - group_by and summarise
-##=============================================================
-## We've seen how to produce summary statistics using the tapply and aggregate functions
-## available in the base package. Now lets see how to do the same thing using the 
-## functions of the dplyr package. The 2 new function we will need are "summarise" and
-## group_by.
 
-## Lets consider our data set with catch=NA removed
-newdat
+- We've seen how to produce summary statistics using the tapply and aggregate functions available in the base package.
 
-## And lets try to repeat the aggregate command we used previously to calculate the 
-## sum of the catches and vessel
+- Now lets see how to do the same thing using the functions of the dplyr package. The 2 new function we will need are "summarise" and group_by.
+
+```{r}
+# Let's repeat the aggregate command we used previously to calculate the 
+# sum of the catches by vessel and year
 agg1=aggregate(catch~year+vessel, newdat, sum)
 agg1
 
-## So, the 2 commands we need to use are summarise and group_by,
-## First we group the data, then we calculate the summary statsitics
-group.data=group_by(newdat, year, vessel)
-summarise(group.data, catch = mean(catch))
-## The output of summarise is a slightly different format than aggregate. Its called
-## a tibble and is somewhat like a data.frame. In fact, it can easily be converted to
-## a data.frame if you wish using "data.frame" or "as.data.frame".
-data.frame(summarise(group.data, catch = mean(catch)))
-as.data.frame(summarise(group.data, catch = mean(catch)))
+newdat$cpue=newdat$cpue1
+dat$cpue=dat$cpue1
 
-## Now, remember that piping operator we saw previously when using the "select" and 
-## "filter" functions of dplyr:
-subset7 = dat %>%
-  filter(month%in%c("Feb","Mar")) %>%
-  select(c(year, month, vessel, catch))
-subset7
-## Well, we can use the piping operator now with the group_by and summarise functions
-## in dplyr:
-summarydat1 = newdat %>%
-  group_by(year, vessel) %>%
-  summarise(catch=sum(catch)) %>%
-  as.data.frame
-summarydat1
-## This looks like exactly like the output of the aggregate command above.
-agg1
+# dplyr way
+#   First we group the data,
+#   then we calculate the summary stastics
+group.data=newdat%>% group_by(year, vessel)%>%
+                      summarise(catch = sum(catch))
+# The output of summarise is a slightly different
+# format than aggregate. Its called a tibble and is 
+#  somewhat like a data.frame. 
+# In fact, it can easily be converted to
+## a data.frame 
+group.data=newdat%>% group_by(year, vessel)%>%
+                     summarise(catch = sum(catch))%>%
+                     data.frame
 
-## Just as in tapply and aggregate we can use a range of functions within the summarise
-## command like sum, mean, min, max etc. However, summarise actually allows different
-## functions to be applied to different variables. For example, we can calculate the
-## mean of the catch rates, but we can also calculate the sum of the catches. 
+#Just as in tapply and aggregate we can use a 
+#  range of functions within the summarise
+# command like sum, mean, min, max etc. 
+#However, summarise actually allows different
+# functions to be applied to different variables. 
+#For example, we can calculate the
+#   mean of the catch rates, but we can also 
+# calculate the sum of the catches. 
 summarydat2 = newdat %>%
-  group_by(year, vessel) %>%
-  summarise(catch=sum(catch), cpue=mean(cpue)) %>%
-  as.data.frame
+             group_by(year, vessel) %>%
+             summarise(catch=sum(catch), cpue=mean(cpue)) %>%
+             as.data.frame
 summarydat2
-## Pretty efficient! - Lets compare this to our aggregate output, remembering that when
-## using aggregate we had to calculate 2 separate aggregate functions then combine via 
-## the merge function!
-aggcomb1
-## The same!
 
-## Now lets add the calculation of the standard errors of the cpues and then their
-## confidence limits. Note that in this calculation I have renamed the average cpue to
-## cpue.mean. This needs to be done as I want to undertake another calculation of the
-## original cpue variable (i.e. the standard error) and the function will get confused
-## with the original cpue variable and the new average value if we use the same name.
-## Its probably good practice to use all new names in the summary function from those 
-## in the original table.
-summarydat3 = newdat %>%
-  group_by(year, vessel) %>%
-  summarise(catch=sum(catch), cpue.mean=mean(cpue), cpue.se=CalcStdError(cpue)) %>%
-  mutate(lowCL = cpue.mean-1.96*cpue.se, uppCL = cpue.mean+1.96*cpue.se) %>%
-  as.data.frame
+
+#Now let's add the calculation of the standard
+#  errors of the cpues and then their
+#  confidence limits. 
+#Note that in this calculation I have renamed the 
+#  average cpue to cpue.mean. 
+#This needs to be done as I want to undertake another
+#  calculation of the original cpue variable (i.e. the
+#  standard error) and the function will get confused
+#  with the original cpue variable and the new average 
+#  value if we use the same name.
+summarydat3 = newdat %>%    
+              group_by(year, vessel) %>%
+              summarise(catch=sum(catch), 
+                        cpue.mean=mean(cpue),
+                        cpue.se=CalcStdError(cpue)) %>%
+              mutate(lowCL = cpue.mean-1.96*cpue.se,
+                     uppCL = cpue.mean+1.96*cpue.se) %>%
+              as.data.frame
 summarydat3
-## compare with aggregate output
-aggcomb4
-## Excellent. They match exactly!!
 
-## Just one final point - we could also integrate the filter function within our piping
-## code to use the original data and subset for non-NA values. In addition, rather than
-## writing our own function to compute the standard error we could simply calculate this
-## within our piping code also. 
+#Integrate the filter function within our piping
+#  code to use the original data and subset 
+#  for non-NA values. 
+# In addition, rather than writing our own function
+#  to compute the standard error we could simply
+#  calculate this within our piping code also
+
 summarydat4 = dat %>%
-  filter(!is.na(catch)) %>%
-  group_by(year, vessel) %>%
-  summarise(catch=sum(catch), 
-            cpue.mean=mean(cpue), 
-            cpue.sd=sd(cpue), 
-            n=n()) %>%
-  mutate(cpue.se=cpue.sd/sqrt(n), 
-         lowCL=cpue.mean-1.96*cpue.se, 
-         uppCL=cpue.mean+1.96*cpue.se) %>%
-  as.data.frame
+        filter(!is.na(catch)) %>%
+        group_by(year, vessel) %>%
+        summarise(catch=sum(catch), 
+                  cpue.mean=mean(cpue), 
+                  cpue.sd=sd(cpue), 
+                  n=n()) %>%
+        mutate(cpue.se=cpue.sd/sqrt(n), 
+               lowCL=cpue.mean-1.96*cpue.se, 
+               uppCL=cpue.mean+1.96*cpue.se) %>%
+        as.data.frame
 summarydat4
-## compare with aggregate output
-aggcomb4
-## Excellent. They still match exactly!!
+```
+
+<br>
+## Student task
+- Try importing the other 'fake' fisheries catch and effort data set called
+ "Lesson5_fisheries catch and effort data v2.csv"
+- Get the mean and SD of total catches by year and month using the tapply function. Then recalculate using the aggregate function.
+- Create a table of average catch rate (catch/days) by vessel including their 95% confidence intervals (assuming a normal distribution). You can choose to use the aggregate function or the dplyr functions using piping code to do this.
+- Plot the catch rates from with their 95% confidence intervals.
+
+## Solution to student task
+```{r}
+#read in data
+d=read.csv(paste(hndl,
+              "Lesson5_fisheries catch and effort data v2.csv",sep=""))
+
+#mean and SD of total catches by year and month
+d1.tap=with(d, tapply(catch, list(year, month), mean,na.rm=T))
+head(d1.tap,2)
+
+d2.tap=with(d, tapply(catch, list(year, month), mean,sd=T))
+head(d2.tap,2)
+
+d1.ag=aggregate(catch~year+month,d, mean,na.rm=T)
+head(d1.ag,2)
+
+d2.ag=aggregate(catch~year+month,d, sd,na.rm=T)
+head(d2.ag,2)
+
+#average catch rate by year and vessel
+d.cpue = d %>%
+        filter(!is.na(catch)) %>%
+        mutate(cpue=catch/days)%>%
+        group_by(vessel) %>%
+        summarise(cpue.mean=mean(cpue), 
+                  cpue.sd=sd(cpue), 
+                  n=n()) %>%
+        mutate(cpue.se=cpue.sd/sqrt(n), 
+               lowCL=cpue.mean-1.96*cpue.se, 
+               uppCL=cpue.mean+1.96*cpue.se) %>%
+        as.data.frame
+
+
+#plot them
+with(d.cpue,plot(1:length(vessel),cpue.mean,ylab="CPUE",
+          xlab="Vessel",pch=19,col=3,cex=1.25,xaxt='n',
+          ylim=c(0,max(uppCL))))
+with(d.cpue,segments(1:length(vessel),lowCL,
+                     1:length(vessel),uppCL ,col=3,lwd=2))
+axis(1,1:length(d.cpue$vessel),d.cpue$vessel)
+
+```
+
+## reshaping and merging
+```{r}
+# tidyverse and piping version
+library(tidyverse)
+# this loads several packages, including tidyr
+
+    # joining data frames
+band_members
+band_instruments
+
+band_members %>% 
+  inner_join(band_instruments)%>%
+  data.frame
+
+band_members %>%
+  left_join(band_instruments)%>%
+  data.frame
+
+band_members %>%
+  right_join(band_instruments)%>%
+  data.frame
+
+band_members %>%
+  full_join(band_instruments)%>%
+  data.frame
+
+    #gathering (long format)
+stocks <- data.frame(
+  time = as.Date('2009-01-01') + 0:9,
+  X = rnorm(10, 0, 1),
+  Y = rnorm(10, 0, 2),
+  Z = rnorm(10, 0, 4))
+stocks
+
+D1=gather(stocks, "stock", "price", -time)
+head(D1)
+D2=stocks %>% gather("stock", "price", -time) #same...
+head(D2)
+
+mini_iris <-  iris %>%
+              group_by(Species) %>%
+              slice(1) %>%  #choose the first 
+                            # row of each Species
+              data.frame
+mini_iris %>% gather(key = "flower_att",
+                     value = "measurement", -Species)
+
+
+    #spread  (wide format)
+ #long version
+head(D1,3)
 
-## We could further add to our piping code to use the select function to remove the
-## additonal columns of cpue.sd and n if we didnt want to retain them in the final 
-## data set.
+  #wide version
+D1 %>% spread(stock, price)
 
-## And quickly heres an example of the plotting available in the tidyverse plotting
-## package called "ggplot2"
-library(ggplot2)
 
-ggplot(summarydat4, aes(year, cpue.mean, colour=vessel)) + 
-  geom_point(pch=16) +
-  geom_line(lty=2) +
-  geom_errorbar(width=.1, aes(ymin=lowCL, ymax=uppCL)) +
-  labs(x="Year",y= "CPUE") + 
-  scale_y_continuous(breaks=seq(0,40,10), limits = c(0, 40)) +
-  scale_x_continuous(breaks=2014:2016)
+# with base R, it can be done with reshape() and 
+#   merge()...
+# try by yourself...
+#search ?reshape() and ?merge() and repeat what we
+#  have just done with dplyr...
 
-##=====================================================================================
-## NOW IT'S YOUR TURN!!!!
-##=====================================================================================
-## Try importing the other 'fake' fisheries catch and effort data set called
-# "fisheries catch and effort data v2.csv"
+```
 
-## (1) Create a summary table of total catches by year and month using the tapply 
-## function. Then recalculate using the aggregate function.
-## Which version do you prefer?? Why??
 
-## (2) Create a summary table of average catch rate by year and vessel including their 
-## 95% confidence intervals (assuming a normal distribution). You can choose to use the 
-## aggregate function or the dplyr functions using piping code to do this.
-
-## (3) Plot the catch rates from (2) with their 95% confidence intervals.
-
-##=====================================================================================
-## END OF CODE
-##=====================================================================================
-
-
-##==========================================================================
-## SECTION 1: DATA PREPARATION
-##==========================================================================
-## Read in data from csv file or text file.
-# list files in wd
-dir()
-
-# read in csv data
-dat=read.csv("CAES_Extraction_Block_95020_2010_2017.csv")
-head (dat)
-head(dat,2)
-dim(dat)
-names(dat) # for a data frame, names(dat) is the same as colnames(dat)
-
-# convert upper case characters to lowercase (header line)
-# upper=FALSE is the default option so doesn't necessarily need to be there but there for completion 
-names(dat) = casefold(names(dat), upper=FALSE) 
-
-names(dat)
-
-# convert rest of data frame to lower case
-dat = data.frame(lapply(dat, function(v) {
-  if(is.character(v))return(tolower(v))
-  else return(v)
-}))
-
-head(dat)
-
-## Rename columns if desired.
-
-
-## Remove columns/variables if not required -  maybe there are some 
-## additional variables included in the data set that simply not required, 
-## or maybe you're not sure what some of the variables are - if so, you   
-## might need to check if you need them!
-
-## have a look at the variables
-## use summary functions such as table, unique and summary to look at each variable
-
-str(dat)
-
-head(dat)
-names(dat)
-
-
-unique(dat$"nilr_hi")
-table(dat$"nilr_hi") # table function by default omits any NA's
-table(dat$"nilr_hi", useNA= always) # to keep any NA's in if you want them
-
-
-## subset using select function for columns that are required (remove those that you dont need)
-dat=subset(dat, select=c(year, month, vessel, fdays, crew, port, method, blockx, bdays, hours, pots, shots, netlen, species, sname, 
-                         conditn,livewt, mslow, mshigh))
-head(dat)
-dim(dat)
-str(dat)
-
-## Have an initial look at data to check remaining variables for errors, 
-## outliers and missing values (are they NA's or errors).
-## Conduct some exploratory data summaries of all variables that will be
-## considered in the analyis using functions such as "table" and "unique" to 
-## basically try to understand the format of the data.
-
-unique(dat$year)
-table(dat$year)
-
-unique(dat$month)
-table(dat$month)
-
-table(dat$year, dat$month) # or can do a two way table if want to see in what year and months there is data
-
-table(dat$port) 
-
-table(dat$vessel, dat$port) # good to see whether for eg. a particular vessel is associated with a particular port
-
-unique(dat$blockx) # single block fishery
-table(dat$blockx) # block 95020, with 3508 observations
-
-table(dat$vessel)
-# note there is m039 and m039a. Are they the same vessel/replacement vessel etc...? ie. can they be joined together
-
-table(dat$year, dat$vessel)
-
-## notice m039 and m039a never fishing concurrently- should be considered as the same vessel
-## combine m039a with m039
-dat$vessel[which(dat$vessel=="m039a")] = "m039"
-unique(dat$vessel) # to make sure that they have combined
-
-unique(dat$method)
-table(dat$method)
-
-# pt and ct are the same so can be joined also (to ct as that is obviously the dominant method)
-dat$method[which(dat$method=="pt")]= "ct"
-table(dat$method) # to make sure pt has been reassingned to ct
-
-table(dat$fdays)
-table(dat$bdays) # sum of number of block days doesn't always equal the sum of fishing days
-
-table(dat$crew)
-
-table(dat$hours)
-
-table(dat$pots)
-
-table(dat$method, dat$pots)
-
-table(dat$method, dat$shots)
-
-table(dat$method, dat$netlen)
-
-unique(dat$species)
-
-unique(dat$sname)
-
-unique(dat$conditn)
-
-## Do we need to remove data from incomplete years/months? Might do that at
-## this stage or maybe leave for later.
-
-
-
-##==========================================================================
-## SECTION 2: DATA MANAGEMENT - BY UNIQUE FISHING EVENT
-##==========================================================================
-## With catch and effort data sets, it is often useful to get your data into
-## a form where each line represents a unique fishing event. And typically,
-## this is not how the data is first extracted!!!!! For example, in a CAES 
-## extraction each species caught during a "unique fishing event" (which is 
-## a fishing session in a given year and month for an individual vessel in a 
-## particular block using a particular gear method and configiration) is
-## recorded on a separate line. So the effort variables like days fished, 
-## hours fished, number of pots or shots is repeated on each line. By 
-## creating a data set where each line represents a unique fishing event, it
-## is often a lot easier to then use this new data set to calculate  
-## summaries of effort and catch rate.
-## So, first we are going to get our data in this "unique fishing event" form
-## and then we can move on to actually calculating our summary tables as 
-## outlined in Section 3. 
-
-## In order to do so we must consider:
-## - what variables help us to distinguish each individual fishing event, 
-## - what variables we will need to keep in our data set to make sure we 
-##   achieve our desired objective 
-##    - fishing method/appropriate effort measures for each fishing event 
-##    - catch of single/multiple/all species for each event
-##    - spatial and temporal information for each event. 
-##
-## Questions: 
-## - What species are we interested in - single, few or many?
-## - What fishing methods are we interested in - maybe multiple methods for
-##   total catch but only the main method for catch rates???
-## - What effort variables are we interested in?
-##   It is worth noting here that there are typically more than one effort
-##   measure that CAN and SHOULD be considered. This helps us to get a more 
-##   complete picture, and often forces us to provide justifications for not 
-##   using one measure over another?
-## - What other effort variables are recorded but perhaps not usable at this 
-##   stage as they require further validation or there is some reason why 
-##   their consideration is simply inappropriate?
-
-names(dat)
-
-
-
-
-
-
-##==========================================================================
-## SECTION 3: MAKE SUMMARY TABLES
-##==========================================================================
-## What summaries are we interested in, and in what format? i.e. do we need
-## the tables themselves or do we need them so that we can make a plot?
-## Remember back to our overarching OBJECTIVE - summary tables and plots of
-## catch, effort and catch rate.
-## So what exactly do we want?
-## - Catch by year for target and/or key species
-## - Total catch of all species by year 
-## - Annual catch by fishing method
-## - Annual catch by vessel
-## - Effort by year (what is our measure of effort?? multiple measures??)
-## - Nominal catch rate by year
-## - Annual mean catch rate 
-## - Possibly also require data compiled for future catch rate 
-##   standardisation analysis either by yourself or by someone else i.e. SADA
-##   (Please note that we won't be covering CPUE standardisation in this  
-##   session as that's a quite a task in its own right.)
-## - Anything else???
-
-
-
-##==========================================================================
-## SECTION 3: MAKE SUMMARY PLOTS
-##==========================================================================
-## Using tables above, we will create the plots that we desire for our 
-## overarching OBJECTIVE - summary tables and plots of catch, effort and 
-## catch rate.
-## So what exactly do we want - maybe what we mentioned above?
-## - Catch by year for target and/or key species
-## - Total catch of all species by year 
-## - Annual catch by fishing method
-## - Annual catch by vessel
-## - Effort by year (what is our measure of effort?? multiple measures??)
-## - Nominal catch rate by year
-## - Annual mean catch rate 
-## - Anything else???
-## What type of plot - line plot, bar chart?
-## Do we need to, and are we able to, include confidence intervals?
-## How can we save out plots for future use, and in what format do we wish
-## to save them - jpeg, tiff, eps, png etc.
-
-
-
-
-
-
+<br>
 tidyverse cheat sheet
 https://rstudio.com/resources/cheatsheets/
 
 
-#Base times and dates
+# Base times and dates
+```{r}
 silly.dates <- c("12/22/2003","02/06/2005","04/08/2005")
 silly.dates       # these are just character strings
 
 silly.dates2 <- c("12/22/03","02/06/05","04/08/05")
 silly.dates2 
 
-# the function strptime() strips a date out of a character string by assuming 
-# the date is encoded according to the format you specify in "quotes". The %
-# sign preceeds a single letter code for what variable is next and then after
-# that is whatever else will occur in the character string before the next time
-# variable. 
+# the function strptime() strips a date out
+#  of a character string by assuming 
+# the date is encoded according to the format
+# you specify in "quotes". 
+# The % sign preceeds a single letter code for what 
+# variable is next and then after
+# that is whatever else will occur in the character 
+# string before the next time variable. 
 
 dates = strptime(silly.dates2,format="%m/%d/%y")  
 dates
    
-strptime(silly.dates,format="%m/%d/%y")   # whooops! It's putting a 2020 at the
-                                          # start of each date!
+strptime(silly.dates,format="%m/%d/%y") 
+# whooops! ...putting a 2020 at the start of each date!
 
-# we need to tell strptime the correct format: the year is abbreviated to two
-# digits. Use %Y, NOT %y (see table in Crawley's blue book (The R Book))   
+# we need to tell strptime the correct format: the 
+#  year is abbreviated to two digits. 
+# Use %Y, NOT %y 
 strptime(silly.dates,format="%m/%d/%Y")
 
-# Of course, getting the dates into R is just the first step. We may very well
-# want to extract the year, month and day. This can be done with the substr()
+# Getting the dates into R is just the first step. 
+# We may very well want to extract the year, month and day.
+# This can be done with the substr()
 # function as follows:
 
 dates
@@ -1610,85 +1449,96 @@ months
 days = substr(dates,9,10)
 days 
 
-# now let's read in a text file with dates and other data. Here, the dates & 
+# now let's read in a text file with dates
+# and other data. Here, the dates & 
 # time are in 7 separate columns
-
 d <- read.csv(paste(hndl,"Lesson5_temp-time.csv",sep=""),header=T)
 d
 attach(d)
 dim(d)
-# The data set consists of several columns indicating time and one response 
-# variable, temperature. 
+# The data set consists of several columns 
+# indicating time and one response variable, temperature. 
 
 # We need to write time so that it can be handled by R.
 
-# First let's join together in the proper format the hours, minutes and seconds
+# First let's join together in the proper format the 
+#   hours, minutes and seconds
 time.of.day <- (paste(hour,min,sec,sep=":"))
 time.of.day
 # Now let's add the time zone (separated by a space)
 time.of.day.VA <- paste(time.of.day,meridian,sep=" ")
 time.of.day.VA
-# The date gets formed by grouping together year, month and day in that order, 
-# separated by a dash.
+# The date gets formed by grouping together year, 
+#  month and day in that order, separated by a dash.
 day.of.year <- paste(year,month,day,sep="-")
 day.of.year
 date.complete <- paste(day.of.year,time.of.day.VA,sep=" ")
 date.complete
 
 # There are two basic classes for date and time
-# POSIXct gives you the number of seconds passed since Jan1, 1970 (Think ct =
-#     cumulative time)
-# POSIXlt gives you dates in a form that can be broken down (using the unclass()
-#     function) into a list of vectors representing sec, min,hrs,day,month,year
-#     (Think lt = list of time elements)
-# year is scored as number of years since 1900 so that 2008 gets a score of 108
+# POSIXct gives you the number of seconds passed 
+#  since Jan1, 1970 (Think ct = cumulative time)
+# POSIXlt gives you dates in a form that can be 
+#   broken down (using the unclass() function) 
+#   into a list of vectors representing sec, min,hrs,
+#    day,month,year (Think lt = list of time elements)
+# year is scored as number of years since 1900 so 
+#  that 2008 gets a score of 108
 # mday = day number within the month
-# mon is the month but January is scored as zero, so September is 8 not 9
-# wday is the day of the week starting with Sunday with a score of 0
-# yday is the day of the year starting with January 1 with a score of 0
-# isdst returns whether daylight savings time is in operation
+# mon is the month but January is scored as zero, 
+#    so September is 8 not 9
+# wday is the day of the week starting with 
+#    Sunday with a score of 0
+# yday is the day of the year starting with 
+#    January 1 with a score of 0
+# isdst returns whether daylight savings time 
+#    is in operation
 
 # POSIXlt function
 date.complete
 date1lt <- as.POSIXlt(date.complete)
-date1lt            # note the very slight difference between date.complete and
-                   # date1lt
-unclass(date1lt)
-unlist(unclass(date1lt)) # The output of the function unlist is not very 
-                         # attractive.  It is very difficult to read it.
-                         # However, it might be useful if we are interested in 
-                         # looking at one particular observation. 
-unlist(unclass(date1lt[5]))    # this is a vector representing all the
-                               # information for the 5th record
+date1lt    
+# note the very slight difference between date.complete 
+#  and date1lt
+unclass(date1lt[1])
+unlist(unclass(date1lt[1]))
+# The output of the function unlist is not very 
+# attractive.  It is very difficult to read it.
+# However, it might be useful if we are interested in
+# looking at one particular observation. 
+
+unlist(unclass(date1lt[5])) 
+# this is a vector representing all the
+# information for the 5th record
+
 is.vector(unlist(unclass(date1lt[5])))
 
-unclass(date1lt[5])            # this is a list
+unclass(date1lt[5])     # this is a list
 is.list(unclass(date1lt[5]))
 
 # POSIXct function
 date1ct <- as.POSIXct(date.complete)
 date1ct
-unclass(date1ct)
-unclass(date1ct[5])
+unclass(date1ct[4:5])
 
-###############################################################################
-#Calculations with dates and times
-#
-# R will allow you to do some operations with time.  You can do addition and
-# substraction of two times.  You can also add or substract a constant, 
+# Calculations with dates and times
+
+# R will allow you to do some operations with time
+# You can do addition and substraction of two times. 
+# You can also add or substract a constant, 
 # multiply or divide by a constant.
-# However, multiplication of two times, power, log, etc. are not possible.  
-# In order to do them, you need to reverse the time to numeric using the 
-# as.numeric function.
-# Logical operations such as <=, =>, etc. are also possible with time.
+# However, multiplication of two times, power, log, etc. 
+#  are not possible.  
+# In order to do them, you need to reverse the time to 
+#  numeric using the as.numeric function.
+# Logical operations such as <=, =>, etc. are 
+#  also possible with time.
 
 
 # How many shoppings days are left until Christmas?
-Christmas <- as.POSIXlt("2008-12-25")
+Christmas <- as.POSIXlt("2019-12-25")
 Christmas
-today <- as.POSIXlt("2008-11-24")  # of course, you'd substitute the date you're
-                                   # doing this to find out how many days YOU
-                                   # have left until Christmas!
+today <- as.POSIXlt("2019-10-09") 
 today
 Shopping.days <-Christmas-today
 Shopping.days
@@ -1700,50 +1550,49 @@ Shopping.days + 1
 #   time - number
 #   time1 - time2 (or time2 - time1)
 #   time1 'logical operation' time2
-#     where logical operation can be ==, !=, <, <=, etc.
+# where logical operation can be ==, !=, <, <=, etc.
 
-# Suppose we're really interested in the log of number of days until Christmas
+# Suppose we're really interested in the log of 
+#  number of days until Christmas
 log(Shopping.days)
 num.days <- as.numeric(Shopping.days)
 num.days
 log(num.days)
-# The same operations can be done with POSIXct
-Christmas <- as.POSIXct("2008-12-25")
-Christmas
-today <- as.POSIXct("2008-11-19")
-today
-Christmas-today
+
 
 # How many seconds until the end of class?
-z1 <-as.POSIXlt("2008-11-24 16:20:00")    # you'll want to update the time!
-z1
-z2<- as.POSIXlt(Sys.time())
-z2
-z1 - z2
-number.sec <- round(as.numeric((z1-z2)*3600 ),digits=0)
-cat(paste("There are ",number.sec," seconds until the end of class","\n"))
+end <-as.POSIXlt("2019-10-09 18:00:00")    
+end
+start<- as.POSIXlt("2019-10-09 09:00:00")
+start
+number.sec <- round(as.numeric((end-start)*3600 ),digits=0)
+cat(paste("There are ",number.sec,
+          " seconds until the end of class","\n"))
 
 # Use of the difftime function
-# If J.S.Bach was alive today, how many days old would he be?
+# If J.S.Bach was alive today, how many 
+#  days old would he be?
 difftime("2008-11-19","1685-03-31")
-age.Bach <- round(as.numeric(difftime( "2008-11-18","1685-03-31"), digits=0))
-age.Bach
 
-# How long have we been sitting in this class already?
-difftime( Sys.time(), "2008-11-24 15:00:00")
+```
 
+<br>
 
+# Package Lubridate 
 
-
-#Lubridate tutorial
 source:
+
 https://rpubs.com/mr148/303800
+
+```{r}
 library(lubridate)
 
-df <- data.frame(Date = c("10/9/2009 0:00:00", "10/15/2009 0:00:00"))
+df <- data.frame(Date = c("10/9/2009 0:00:00", 
+                          "10/15/2009 0:00:00"))
  as.Date(df$Date, "%m/%d/%Y %H:%M:%S")
 
-mytime<-ymd_hms("2015-08-14-05-30-00", tz="America/Halifax")
+mytime<-ymd_hms("2015-08-14-05-30-00", 
+                tz="America/Halifax")
 mytime
 
 #get just the date part
@@ -1775,63 +1624,68 @@ mytime
 hour(mytime)
 minute(mytime)
 
+```
 
-#Conditions and program flow
-# CONDITIONALS
+<br>
 
+# Conditionals and program flow
+```{r}
 decision <- T
 
-if (decision==T) cat("\n\nRochelle is a GREAT professor")
-if (decision) cat("\n\nRochelle is a GREAT professor")
+if (decision==T) cat("\n\nMatias is a GREAT professor")
+if (decision) cat("\n\nMatias is a GREAT professor")
+decision
 
-if (decision==F) cat("\n\nRochelle is a GREAT professor")
-if (!decision) cat("\n\nRochelle is a GREAT professor")
+decision <- F
+if (decision==F) cat("\n\nJavier is a GREAT professor")
+if (!decision) cat("\n\nJavier is a GREAT professor")
+decision
 
-# We can include multiple statements in an if() construct if we enclose them
-# in braces {  }.  Also, we can nest if statements
-
+# We can include multiple statements in an if() construct
+# if we enclose them in braces {  }.  
+#  Also, we can nest if statements
 decision <- 1
-if(decision==1){
+if(decision==1)
+{
   junk <- 14
-  for (i in 1:5) {
-    cat("\n")
-    cat("\n\nRochelle is a GREAT professor")
+  for (i in 1:5)
+  {
+   cat("\nMatias is a GREAT professor",i)
   }
-} else {
-    A <- "Oh"
-    B <- " wow!"
-    Sorry <- ", Rom owes me $10"
-    cat("\n",A,B,Sorry)
+} else
+{
+  A <- "Oh"
+  B <- " wow!"
+  Sorry <- ", Javier is not!"
+  cat("\n",A,B,Sorry)
 }
-       # In case you're wondering, Rochelle and Rom are married and they are
-       # both my colleagues and my good friends. But, Rom and I always tease 
-       # each other by insulting each other. So, when they both audited my R
-       # course I couldn't resist giving Rom a hard time.
-       
+
 decision <- 2
-
-if(decision==1){
+if(decision==1)
+{
   junk <- 14
-  for (i in 1:5) {
-    cat("\n")
-    cat("\n\nRochelle is a GREAT professor")
+  for (i in 1:5)
+  {
+   cat("\nMatias is a GREAT professor",i)
   }
-} else {
-    A <- "boo"
-    B <- " hoo"
-    Sorry <- ", Rom"
-    cat("\n",A,B,Sorry,"\n")
+} else
+{
+  A <- "Oh"
+  B <- " wow!"
+  Sorry <- ", Javier is not!"
+  cat("\n",A,B,Sorry)
 }
 
-#
 # There's also a function ifelse(test,ifyes,ifno)
 values = c(3,1,5,6,2,7,5)
-sex = ifelse(values <= 4,"F","M") # if values is < or = to 4, sex is assigned 
-                                  # "F"; otherwise it is assigned "M"
+sex = ifelse(values <= 4,"F","M") 
+# if values is < or = to 4, sex is assigned "F"
+#  otherwise it is assigned "M"
+values
 sex
 
-################################################################################
-# Let's contrast several ways of controlling program flow: for, while and repeat
+# Let's contrast several ways of controlling 
+#  program flow: for, while and repeat
 
 # calculate x! = x(x-1)(x-2)...(2)(1)
 # NOTE: 1! = 1
@@ -1847,10 +1701,11 @@ fac1 <- function(x){
 }
 
 fac1(3)
-sapply(0:5,fac1) # don't worry about the sapply function. Just accept (for now)
-                 # that it will apply the function fac1 to each of the numbers
-                 # in the sequence 0, 1, 2, 3, 4, and 5. We use it here to test
-                 # out our function fac1
+sapply(0:5,fac1)
+# don't worry about the sapply function. Just accept (for now)
+# that it will apply the function fac1 to each of the numbers
+# in the sequence 0, 1, 2, 3, 4, and 5. We use it here to test
+# out our function fac1
 
 fac2 <- function(x) {
   f <- 1
@@ -1887,8 +1742,9 @@ fac4 <- function(x) max(cumprod(1:x))
 fac4(3)
 fac4(1)
 fac4(0)
+```
 
-
+<br>
 
 # Apply family
 source:
@@ -1896,6 +1752,7 @@ https://www.datacamp.com/community/tutorials/r-tutorial-apply-family
 
 Overall, the apply function is a wrapper of looping
 The apply() functions form the basis of more complex combinations and helps to perform operations with very few lines of code. More specifically, the family is made up of the apply(), lapply() , sapply(), vapply(), mapply(), rapply(), and tapply() functions.
+
 ```{r}
 #1. apply
 #  construct a 5x6 matrix
@@ -1905,14 +1762,17 @@ The apply() functions form the basis of more complex combinations and helps to p
 apply(X, 2, sum)
 
 #2. lapply
-#used for applying a given function to every element of a list and obtain a list as a result
+#used for applying a given function to every element 
+# of a list and obtain a list as a result
+
 # create a list of matrices
  MyList <- list(A=matrix(rnorm(10), nrow=5, ncol=2),
                 B=matrix(rnorm(10,5,1), nrow=5, ncol=2),
                 C=matrix(rnorm(10,100,10), nrow=5, ncol=2))
  MyList
  
-# extract the 2nd column from `MyList` with the selection operator `[` with `lapply()`
+# extract the 2nd column from `MyList` with the selection
+ #  operator `[` with `lapply()`
 lapply(MyList,"[", , 2)
 
 # extract the 1st row from `MyList`
