@@ -322,42 +322,13 @@ system.time(length(seq(from=1,to=N,by=1)))
 
 ```
 
-## Student task
+## Student task 1
 Try plotting a histogram of 'ObsAge' for females in area 1 and then area 2 using a loop\
 
 Use par() to show the two histograms in one page 
 
 <br>
 
-## Solution to student task
-```{r}
-par(mfcol=c(2,1),mar=c(4,4,2,2))
-for(a in 1:2)
-{
-  SubDat <- LenAgeDat[LenAgeDat$Area==a &
-                        LenAgeDat$SexNameVec=="Female",]
-  hist(SubDat$ObsAge, breaks=AgeClasses, right=FALSE,
-              col="light pink", main=paste("area",a),
-              xlab="Age class",ylab="Frequency",las=1,
-       xlim=c(0,10))
-}
-
-```
-<br>
-
-## alternatively...what is different?
-```{r}
-area.vec=sort(unique(LenAgeDat$Area))
-par(mfcol=c(2,1),mar=c(4,4,2,2))
-for(a in 1:length(area.vec))
-{
-  with(subset(LenAgeDat,Area==a & SexNameVec=="Female"),hist(ObsAge,
-                breaks=AgeClasses, right=FALSE,col="pink", 
-                main=paste("area",a), xlab="Age class",
-                ylab="Frequency",las=1,xlim=c(0,10)))
-}
-```
-<br>
 ## Let's combine loops and functions to reduce number of code lines
 
 ```{r}
@@ -394,54 +365,10 @@ for(s in 1:length(Sex.vec))
 
 <br>
 
-## Student task
+## Student task 2
 Repeat for 'ObsLen' (i.e. show histogram form each sex and area in 1 page) 
 (tip, think about the break classes and xlim used in the histogram)
 
-<br>
-
-## Solution to student task
-```{r}
-LenClasses <- seq(10*floor(min(LenAgeDat$ObsLen)/10),
-                  10*ceiling(max(LenAgeDat$ObsLen)/10),10)
-fn.hist=function(d,CL,Area)
-{
-  hist(d$ObsLen,breaks=LenClasses, right=FALSE,col=CL, 
-       main=paste("area=",Area,"sex=",Sex.vec[s]),
-       xlab="Size class",ylab="Frequency",las=1,
-       xlim=c(0,max(LenClasses)))
-}
-
-  #finally, apply double loop
-par(mfcol=c(2,2),mar=c(4,4,2,2))
-for(s in 1:length(Sex.vec))
-{
-  for(a in 1:length(area.vec))
-  {
-    fn.hist(d=subset(LenAgeDat,SexNameVec==Sex.vec[s] & Area==a),
-            CL=CL.sex[s],
-            Area=a)
-  } #end of area loop
-} #end of sex loop
-
-
-# Let's do a scatter plots, to show the length at age data,
-#   for each sex in each area
-par(mfcol=c(2,2),mar=c(4,4,2,2))
-for (s in 1:length(Sex.vec))
-  {
-    for (a in 1:length(area.vec))
-      {
-        d=subset(LenAgeDat,SexNameVec==Sex.vec[s] & Area==a)
-        plot(d$ObsAge,d$ObsLen, pch=16, cex=0.8, col=CL.sex[s], 
-             main=paste("area=",a,"sex=",Sex.vec[s]),
-             xlab="Age class (years)", ylab="Length (mm)",las=1,
-             xlim=c(0,10), ylim=c(0,400))
-
-  }
-}
-
-```
 <br><br>
 
 ## Enter package dplyr
@@ -637,7 +564,7 @@ head(newdat3,2)
 
 <br>
 
-## Student task
+## Student task 3
 * Create a new data frame equal to dat
 * For the new data frame, create the variable 'mid.year' which represents
 halway thru the year (i.e. year +0.5)
@@ -652,25 +579,6 @@ Repeat using dplyr and pipes
 
 <br>
 
-## Solution to student task
-```{r}
-#base packages solution
-dat1=dat
-dat1$mid.year=dat1$year+0.5
-dat1=dat1[, -grep("cpue", names(dat1))]
-dat1$cpue3=dat1$catch/mean(dat1$days)
-dat1=dat1[,c("cpue3", "year")]
-
-#dplyr solution
-dat2=dat%>%mutate(mid.year=year+0.5)%>%
-          select(-grep("cpue", names(dat)))%>%
-          mutate(cpue3=catch/mean(days))%>%
-          select(cpue3, year)
-
-head(dat1,3)
-head(dat2,3)
-
-```
 
 ```{r}
 #3 Select/remove rows (observations)
@@ -729,7 +637,7 @@ table(subdat3$month,subdat3$vessel)
 
 <br>
 
-## Student task
+## Student task 4
 * Create a new data frame equal to dat
 * For the new data frame, create the variable 'mean.catch' which is the average catch of all records
 * Then, remove all records from January and March
@@ -741,29 +649,6 @@ Do it first using base packages
 Repeat using dplyr and pipes
 
 <br>
-
-## Solution to student task
-```{r}
-#base packages solution
-dat1=dat
-dat1$mean.catch=mean(dat1$catch)
-dat1=dat1[!dat1$month%in%c("Jan","Mar") & dat1$numcrew>3, ]
-dat1=dat1[,c('vessel', 'mean.catch')]
-
-#dplyr solution
-dat2=dat%>%mutate(mean.catch=mean(catch))%>%
-  filter(!month%in%c("Jan","Mar") & numcrew>3)%>%
-  select(vessel, mean.catch)
-
-dat1
-dat2
-
-
-
-
-
-```
-
 
 ```{r}
 #4 Change the ordering of the observations
@@ -1160,45 +1045,11 @@ legend("topright", legend=unique(aggcomb2$vessel),
 
 <br>
 
-## Student task
+## Student task 5
 * Create a new data frame equal to dat
 * Calculate mean and SE of the variables 'days' and 'catch' by 'year'
 * In one page, Plot mean days (and 95% CI) by year and mean catch (and 95% CI) by year 
 
-
-<br>
-
-## Solution to student task
-```{r}
-# Create a new data frame equal to dat
-dat3=dat
-
-# Calculate mean and SE of the variables 'days' and 'catch' by 'year'
-agg3=aggregate(cbind(days,catch)~year, dat3, mean)
-agg4=aggregate(cbind(days,catch)~year, dat3, CalcStdError)
-
-names(agg4)[which(names(agg4)%in%c("days","catch"))]=c("days.se","catch.se")
-aggcomb2 = merge(agg3, agg4, by="year")
-
-aggcomb2$days.lowCL = aggcomb2$days - 1.96 * aggcomb2$days.se
-aggcomb2$days.uppCL = aggcomb2$days + 1.96 * aggcomb2$days.se
-
-aggcomb2$catch.lowCL = aggcomb2$catch - 1.96 * aggcomb2$catch.se
-aggcomb2$catch.uppCL = aggcomb2$catch + 1.96 * aggcomb2$catch.se
-
-# In one page, Plot mean days (and 95% CI) by year 
-#  and mean catch (and 95% CI) by year
-par(mfcol=c(2,1),mar=c(4,4,2,2))
-with(aggcomb2,plot(year,days,ylim=c(0,max(days.uppCL)),pch=19,
-     ylab="Days",xlab="Year"))
-with(aggcomb2,arrows(year, days.lowCL, year,days.uppCL,code=3,
-                     angle=90, length=0.02))
-
-with(aggcomb2,plot(year,catch,ylim=c(0,max(catch.uppCL)),pch=19,
-     ylab="Catch",xlab="Year"))
-with(aggcomb2,arrows(year, catch.lowCL, year,catch.uppCL,code=3,
-                     angle=90, length=0.02))
-```
 <br><br>
 
 
@@ -1288,55 +1139,14 @@ summarydat4
 ```
 
 <br>
-## Student task
+## Student task 6
 - Try importing the other 'fake' fisheries catch and effort data set called
  "Lesson5_fisheries catch and effort data v2.csv"
 - Get the mean and SD of total catches by year and month using the tapply function. Then recalculate using the aggregate function.
 - Create a table of average catch rate (catch/days) by vessel including their 95% confidence intervals (assuming a normal distribution). You can choose to use the aggregate function or the dplyr functions using piping code to do this.
 - Plot the catch rates from with their 95% confidence intervals.
 
-## Solution to student task
-```{r}
-#read in data
-d=read.csv(paste(hndl,
-              "Lesson5_fisheries catch and effort data v2.csv",sep=""))
-
-#mean and SD of total catches by year and month
-d1.tap=with(d, tapply(catch, list(year, month), mean,na.rm=T))
-head(d1.tap,2)
-
-d2.tap=with(d, tapply(catch, list(year, month), mean,sd=T))
-head(d2.tap,2)
-
-d1.ag=aggregate(catch~year+month,d, mean,na.rm=T)
-head(d1.ag,2)
-
-d2.ag=aggregate(catch~year+month,d, sd,na.rm=T)
-head(d2.ag,2)
-
-#average catch rate by year and vessel
-d.cpue = d %>%
-        filter(!is.na(catch)) %>%
-        mutate(cpue=catch/days)%>%
-        group_by(vessel) %>%
-        summarise(cpue.mean=mean(cpue), 
-                  cpue.sd=sd(cpue), 
-                  n=n()) %>%
-        mutate(cpue.se=cpue.sd/sqrt(n), 
-               lowCL=cpue.mean-1.96*cpue.se, 
-               uppCL=cpue.mean+1.96*cpue.se) %>%
-        as.data.frame
-
-
-#plot them
-with(d.cpue,plot(1:length(vessel),cpue.mean,ylab="CPUE",
-          xlab="Vessel",pch=19,col=3,cex=1.25,xaxt='n',
-          ylim=c(0,max(uppCL))))
-with(d.cpue,segments(1:length(vessel),lowCL,
-                     1:length(vessel),uppCL ,col=3,lwd=2))
-axis(1,1:length(d.cpue$vessel),d.cpue$vessel)
-
-```
+<br>
 
 ## reshaping and merging
 ```{r}
@@ -1752,6 +1562,8 @@ https://www.datacamp.com/community/tutorials/r-tutorial-apply-family
 
 Overall, the apply function is a wrapper of looping
 The apply() functions form the basis of more complex combinations and helps to perform operations with very few lines of code. More specifically, the family is made up of the apply(), lapply() , sapply(), vapply(), mapply(), rapply(), and tapply() functions.
+
+We already learnt about tapply()..let's have a look at the others..
 
 ```{r}
 #1. apply
