@@ -1139,6 +1139,7 @@ summarydat4
 ```
 
 <br>
+
 ## Student task 6
 - Try importing the other 'fake' fisheries catch and effort data set called
  "Lesson5_fisheries catch and effort data v2.csv"
@@ -1206,14 +1207,42 @@ D1 %>% spread(stock, price)
 
 # with base R, it can be done with reshape() and 
 #   merge()...
-# try by yourself...
-#search ?reshape() and ?merge() and repeat what we
-#  have just done with dplyr...
-
 ```
 
+<br>
+
+## Student task 7
+Suppose we have observations for one year of monthly catches
+for the different vessels operating in a given fishery:
+```{r}
+N=100
+Vesl.vec=paste('LFB',LETTERS)
+Sp.vec=c("Gummy","Dusky","Sandbar","Whiskery")
+Area.vec=paste('Area',1:3,sep='.')
+dummy.effort=expand.grid(Month=1:12,
+                         Vessel=Vesl.vec,
+                         Area=Area.vec)
+dummy.effort$Effort=rnorm(nrow(dummy.effort),10,1)
+
+dummy.ktch=data.frame(
+      Month=sample(1:12,N,replace=TRUE),
+      Vessel=sample(Vesl.vec,N,replace=TRUE),
+      Species=sample(Sp.vec,N,replace=TRUE),
+      Catch=rnorm(N,100,20),
+      Area=sample(Area.vec,N,replace=TRUE))
+
+head(dummy.effort,3)
+head(dummy.ktch,3)
+
+```
+- Step 1. For each species, sum the catch  by month-vessel-area
+- Step 2. Create wide data frame of catches
+- Step 3. Combine the wide catch and effort 
+
+Combine the use of dplyr and reshape
 
 <br>
+
 tidyverse cheat sheet
 https://rstudio.com/resources/cheatsheets/
 
