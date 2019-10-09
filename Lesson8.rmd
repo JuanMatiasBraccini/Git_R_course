@@ -1,5 +1,5 @@
 ---
-title: "Lesson 8. Population dynamics"
+title: "Lesson 8. Demography and population dynamics"
 knit: (function(inputFile, encoding) {
   rmarkdown::render(inputFile, encoding = encoding, output_dir = "C:/Matias/Cursos/2019_Mexico/htmls") })
 
@@ -62,7 +62,299 @@ knitr::opts_chunk$set(fig.width = 6,fig.height = 6,error=TRUE,
 ```
 
 # Lesson goals
-We're going to develop and fit surplus production and age-structured population dynamics models.
+We're going to develop and fit Leslie matrices, surplus production and age-structured population dynamics models.
+
+# Leslie matrices (Wikipedia)
+
+- The Leslie matrix is one of the most well known ways to describe the growth of populations (and their projected age distribution), in which a population is closed to migration, growing in an unlimited environment, and where only one sex, usually the female, is considered
+- It is a square matrix (i.e. same number of rows and columns)
+- At each time step, the population is represented by a vector $N_t$ with an element for each class where each element indicates the number of individuals currently in that class
+- The key elements are:
+  - $n_x$, the count of individuals (n) of each age class x
+  - $s_x$, the fraction of individuals that survives from class x to class x+1,
+  - $f_x$, fecundity at class x, the number of offspring produced at the next class weighted by the probability of reaching the next age class.
+
+$$N_{t+1}=X N_t$$
+$$\mathbf{X} = \left[\begin{array}
+{rrr}
+f_1 & f_2 & f_3 & f_4 & f_5\\
+s_1 & 0 & 0 & 0 & 0\\
+0 & s_2 & 0 & 0 & 0\\
+0 & 0 & s_3 & 0 & 0\\
+0 & 0 & 0 & s_4 & 0\\
+\end{array}\right]
+$$
+$$\mathbf{N_t} = \left[\begin{array}
+{rrr}
+n_1 \\
+n_2 \\
+n_3 \\
+n_4 \\
+n_5 \\
+\end{array}\right]
+$$
+
+## Let's fit a Leslie matrix for white sharks
+source Braccini et al 2017
+https://www.sciencedirect.com/science/article/pii/S0304380017303447
+```{r}
+library(triangle)
+library(popbio)     #for solving matrices
+
+
+#1. Biological data
+first.age=0   #first age class. Assuming post-breeding census 
+              # (this is the 0-1 age class actually)
+RangeA.1=c(40,60)  #max age range
+k.mean=0.056       #growth parameters
+Linf.mean=7.19
+Lo.mean=1.4
+Range.reprod_cycle=1:3   #range of possible reproductive cycles
+prob.rep.cycle=c(0.05,0.25,0.7)   # probs for 1, 2 or 3-year reprod cycle
+Rangefec=2:10         #litter size
+age.mat=c(9,17)      #range age at maturity of females
+Aver.T=14         #average water temperature in WA
+sd.Aver.T=1.5
+bwt=7.5763e-06;awt=3.0848 #length-weight parameters
+Dry.w=0.2   #convertion wet to dry weight (Cortes 2002)
+sexratio=0.5  #pups sex ratio
+
+
+#2.  Function for calculating Natural mortality
+M.fun=function(A,k,Linf,Aver.T,age.mat,bwt,awt,W.G,W.noG)
+{
+  #STEP 1. calculate M from different methods (see Kenchington 2013)
+  #.age invariant
+  #Jensen (1996)
+  m.Jensen.1=1.5*k
+  m.Jensen.1=rep(m.Jensen.1,length(age))
+  
+  m.Jensen.2=1.65/age.mat
+  m.Jensen.2=rep(m.Jensen.2,length(age))
+  
+  #Pauly (1980)  
+  m.Pauly=10^(-0.0066-0.279*log10(Linf*100)+0.6543*log10(k)+0.4634*log10(Aver.T))
+  m.Pauly=rep(m.Pauly,length(age))
+  
+  #Hoenig (1983), combined teleost and cetaceans    
+  m.Hoenig=exp(1.44-0.982*log(A))      
+  m.Hoenig=rep(m.Hoenig,length(age))
+  
+  #Then et al (2015)
+  m.Then.1=4.899*A^(-0.916)
+  m.Then.1=rep(m.Then.1,length(age))
+  #m.Then.2=4.118*(k^0.73)*(Linf^(-0.33))
+  
+  #.age dependent
+  #Peterson and Wroblewski 1984 (dry weight in grams)
+  wet.weight=(7.5763e-06)*fork^3.0848 
+  m.PetWro=1.92*((wet.weight*Dry.w)*1000)^-0.25
+  
+  #Lorenzen 1996 (weight in grams)
+  m.Lorenzen=3*(wet.weight*1000)^-0.288
+  
+  #Gislason et al (2010) (lengths in grams)
+  m.Gislason=1.73*(mid.FL.fem^-1.61)*((Linf*100)^1.44)*k
+  if(m.Gislason[1]>1)m.Gislason=rep(NA,length(age))
+  
+  
+  #STEP 2. get mean at age
+  nat.mort=data.frame(m.Jensen.2,m.Pauly,m.Hoenig,m.Then.1,m.PetWro,m.Lorenzen,m.Gislason)
+  N=ncol(nat.mort)
+  nn=length(age)
+  nat.mort.all=nat.mort
+  
+  Weights=data.frame(W.J=rep(W.noG,nn),W.P=rep(W.G,nn),W.H=rep(W.noG,nn),W.T=rep(W.noG,nn),
+                     W.P=rep(W.noG*1,nn),W.L=rep(W.noG*1,nn),W.G=rep(W.G*1,nn))
+  
+  nat.mort=data.frame(nat.mort,Weights)
+  nat.mort=apply(nat.mort, 1, function(x) weighted.mean(x[1:N], x[(N+1):ncol(nat.mort)],na.rm = T))
+  
+  
+  return(nat.mort)
+}
+
+# Function for filling in ages to max longevity for all iterations
+add.missing.age=function(data,A)
+{
+  test=list()
+  for(i in 1:length(data))
+  {
+    datos=data[[i]]
+    if(length(datos)<A)
+    {
+      extra=A-length(datos)
+      datos=c(datos,rep(NA,extra))
+    }
+    test[[i]]=datos
+    if(length(datos)>A)test[[i]]=datos[1:A]
+  }
+  dummy=do.call(rbind,test)
+  return(dummy)
+}
+
+#3. Solve Leslie matrix
+set.seed(999)
+#Draw random samples of parameters and calculate population quantities
+Ns <- 1000	  #number of simulations
+iterations=1:Ns
+  
+mx.sim=m.SIM=Proyec.matrix=vector("list",length = Ns)
+A.SIM=vector(length = Ns)
+for (s in iterations)
+{
+  
+  #1. Draw parameter samples and build functions
+    #maximum age
+  A.sim=floor(rtriangle(1,
+                        a=RangeA.1[1],
+                        b=RangeA.1[2]+1,
+                        c=RangeA.1[1])) #triangular dist
+  A.SIM[s]=A.sim 
+        
+    #number of age classes
+  age=first.age:A.sim
+        
+    #reproductive cycle
+  Reprod_cycle.sim=sample(Range.reprod_cycle,1,replace=T,
+                          prob = prob.rep.cycle) 
+  Pmax.sim=1/Reprod_cycle.sim
+        
+    #fecundity and age at maturity
+  Meanfec.sim=rep(ceiling(rtriangle(1,
+                  a=Rangefec[1]-1,
+                  b=Rangefec[length(Rangefec)],
+                  c=Rangefec[length(Rangefec)])),length(age)) #triangular dist
+  age.mat.sim=round(rtriangle(1,
+                  a=age.mat[1],
+                  b=age.mat[2],
+                  c=floor(mean(age.mat))))    #triangular dist
+   
+    #temperature
+  Aver.T.sim=rnorm(1,Aver.T,sd.Aver.T)    #normal dist
+        
+    #total length
+  total.length=Lo.mean+(Linf.mean-Lo.mean)*(1-exp(-k.mean*age))
+        
+    #fork length
+  fork=(0.9442*total.length*100)-5.7441 
+  mid.FL.fem=fork
+        
+    #natural mortality
+  m.sim=M.fun(A=A.sim,k=k.mean,Linf=Linf.mean,Aver.T=Aver.T.sim,
+              age.mat=age.mat.sim,bwt,awt,W.G=1,W.noG=1)
+  m.SIM[[s]]=m.sim
+  
+    #survivorship
+  S=exp(-m.sim)         
+        
+    #proportion surviving
+  lx=rep(NA,length(age))
+  lx[1]=1.0
+  for (i in 2:(length(age)))lx[i]=lx[i-1]*S[i]
+        
+    #reproductive schedules   
+  MF=c(rep(0,(age.mat.sim-1)),Meanfec.sim[age.mat.sim:length(Meanfec.sim)])
+  mx=MF*sexratio*Pmax.sim
+  mx.sim[[s]]=mx
+  
+    #probability of surviving (for birth-pulse, post-breeding census)
+  px=vector(length=length(lx))
+  for(i in 2:length(lx)) px[i-1]=(lx[i])/(lx[i-1])
+  
+    #fertility  (for birth-pulse, post-breeding census)
+  bx=mx*px
+
+    #projection matrix   
+  PX=px
+  PX=PX[-length(PX)]
+  BX=bx
+  n=length(BX)
+  Data=matrix(0,nrow=n,ncol=n)
+  diag(Data)[-nrow(Data)]=PX
+  Data=rbind(matrix(0,nrow=1,ncol=n),Data)
+  Data=Data[-(n+1),]
+  Data[1,]=BX
+  rownames(Data)=colnames(Data)=(first.age+1):n
+  Proyec.matrix[[s]]=Data
+}
+LAMBDA=sapply(Proyec.matrix,lambda)
+r.sim=log(LAMBDA)         
+    
+t2.sim=log(2)/r.sim           #pop doubling time
+v=sapply(Proyec.matrix,reproductive.value)    #reproductive value
+Elasticities=sapply(Proyec.matrix,elasticity) #elasticities
+    
+#4. Extract average elasticities per life stage
+names.elast.stage=c("juv.surv","adult1.surv","adult2.surv",
+                    "juv.fec","adult1.fec","adult2.fec") 
+n.elas.stages=length(names.elast.stage)
+Elast.stage=matrix(,ncol=n.elas.stages,nrow=length(Elasticities))
+nn=1:n.elas.stages
+juv=(first.age):(age.mat[1]-1)
+adul1=age.mat[1]:age.mat[2]
+adul2=(age.mat[2]+1):RangeA.1[2]
+
+for (e in 1:length(Elasticities))
+{
+      test=Elasticities[[e]]
+      Elast.stage[e,nn[1]]=sum(test[2:nrow(test),juv])
+      Elast.stage[e,nn[2]]=sum(test[2:nrow(test),adul1])
+      Elast.stage[e,nn[3]]=sum(test[2:nrow(test),adul2[adul2<=A.SIM[e]]])
+      
+      Elast.stage[e,nn[4]]=sum(test[1,juv])
+      Elast.stage[e,nn[5]]=sum(test[1,adul1])
+      Elast.stage[e,nn[6]]=sum(test[1,adul2[adul2<=A.SIM[e]]])
+    }
+colnames(Elast.stage)=names.elast.stage 
+    
+    
+#5 Fill in missing age classes 
+mx.sim=add.missing.age(mx.sim,RangeA.1[2])
+m.SIM=add.missing.age(m.SIM,RangeA.1[2])
+v.SIM=add.missing.age(v,RangeA.1[2])
+
+      
+#6. Remove  nonsense 
+#note: remove param combos that yield negative growth
+LAMBDA.reject=LAMBDA[LAMBDA<1]  #store negative growth separetely
+ID.lam.rej=which(LAMBDA<1)
+if(length(ID.lam.rej)>0)
+{
+      LAMBDA=LAMBDA[-ID.lam.rej]        
+      r.sim=r.sim[-ID.lam.rej]
+      t2.sim=t2.sim[-ID.lam.rej]
+      A.SIM=A.SIM[-ID.lam.rej]
+      Elasticities=Elasticities[-ID.lam.rej]
+      Elast.stage=Elast.stage[-ID.lam.rej,]
+      Proyec.matrix=Proyec.matrix[-ID.lam.rej]
+}
+    
+#Show basic results
+par(mfcol=c(3,1),mar=c(4,2,1,1),oma=c(2,2,.1,.1),cex.lab=1.5,
+    mgp=c(2.2,.6,0))
+hist(LAMBDA,main='',col="orange",ylab="",
+     xlab=expression(paste(lambda," " (year^-1),sep="")))
+hist(r.sim,main='',col="orange",ylab="",
+     xlab=expression('r '(year^-1)))
+hist(t2.sim,main='',col="orange",ylab="",xlab="years")
+mtext("Frequency",2,outer=T)
+
+
+m.med=apply(m.SIM,2,median,na.rm=T)
+m.upper=apply(m.SIM,2,quantile,probs=.975,na.rm=TRUE)
+m.lower=apply(m.SIM,2,quantile,probs=.025,na.rm=TRUE)
+par(mfcol=c(1,1),mar=c(4,4,.1,.1),cex.lab=1,oma=c(4,4,.1,.1))
+
+plot(1:RangeA.1[2],m.med,pch=19,col=1,cex=1.25,xlab="Age",
+     ylab=expression("Natural mortality  " (year^-1)),
+     ylim=c(0,max(m.upper)))
+segments(1:RangeA.1[2],m.upper,1:RangeA.1[2],m.lower)
+
+
+```
+
+<br><br>
 
 # Surplus production
 
