@@ -86,6 +86,7 @@ fisher.test(sex.ratio)
 ```
 
 <br>
+
 ## Now let's look at the lack of independence graphically.
 ```{r}
 par(mfrow=c(1,1))
@@ -321,7 +322,7 @@ model1 = lm(y~x1)       # store the results of the first model
 model12 = lm(y~x1+x2)   # store the results of the second model
 anova(model1,model12)    # list null (reduced) model first.
 # We see that we reject the null hypothesis that the reduced model, 
-#  i.e. model1, is sufficient ... so we also need x2
+#  i.e. model1, is sufficient ... so we also need x1
 
 
 # Fitting with an OFFSET

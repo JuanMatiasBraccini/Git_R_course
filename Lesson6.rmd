@@ -169,7 +169,13 @@ mtext("outer margin 1",line=2,col=3,side=1,outer=T)
 mtext("outer margin 3",line=2,col=3,side=3,outer=T)
 mtext("outer margin 4",line=2,col=3,side=4,outer=T)
 ```
+<br> 
 
+## Student task 1.
+- Create five vectors of X (X1 to X5) and of Y (Y1 to Y5)
+- Plot each X-Y pair (5 plots in total) in one single page.
+Plot each graph with a different point color and type (see 'pch'),
+also use different colors for the axis. Finally remove the X and Y label of each graph and instead have one single overall X and Y axis label (tip, use mtext(...outer=T)). Make sure all text (axis labels and titles) are vertical (tip: control thru par())
 
 ## 4. Palette (one way to control colors)
 ```{r}
@@ -279,7 +285,16 @@ text(10,3,expression(paste("f(x) = ",1/sqrt(2*pi * sigma)*exp(- (x - mu)^2/(2*si
 # demo(plotmath)    
 
 ```
+<br>
 
+## Student task 2
+
+Plot X (X=1:10) and Y (Y=X*3), each point as a filled circle
+of progressively increasing shades of grey (tip, modify the palette but then change it back to default)
+Add this expression to the X axis:
+$$\sum_{i=1}^{n} X_i^y$$
+
+<br>
 
 ## 7. Multiplots in one page
 ```{r}
@@ -541,7 +556,23 @@ g+ annotation_custom(g_pic , xmin=5, xmax=7, ymin=30, ymax=45)
 ggsave("C:/Matias/Cursos/2019_Mexico/Plots_Maps/tiger.png", width = 6,
        height = 6, dpi = "screen")
 
+dev.off() 
 ```
+<br>
+
+## Student task 3
+- 1. Using the data frame mpg, do a red histogram of cty with 50 bins
+- 2. do a boxplot of hwy for different levels of drv
+- 3. do a scatterplot of displ vs hwy and display (show points as orange) 
+- 4. Now increase point size to 3 and show point color
+  reflecting the number of cylinders (var cyl)
+- 5. Change X axis label to "DISPL" and add main title "DISPL vs hwy"  and subtitle "some stuff"
+- 6. do a scatterplot of displ vs hwy and display but
+  showing each value of cyl in a different plot
+  AND  all plots in the same page
+
+
+<br>
 
 # PBS mapping
 PBS stands for Pacific Biological Station (PBS) in Nanaimo, British Columbia, Canada
@@ -552,11 +583,19 @@ I learnt to do maps with this package >10 years ago and I'm sticking to it...sti
 ```{r}
 library(PBSmapping)
 data(worldLLhigh)  #read in in shape file of the world
-dev.off() 
+
 
 #plot the world
-plotMap(worldLLhigh)
+tiff(file="C:/Matias/Cursos/2019_Mexico/Plots_Maps/PBS_map1_The world.tiff",
+     width=2400,height=1600,units="px",res=300,compression="lzw")
+plotMap(worldLLhigh,main="this is the world",col="orange")
+arrows(100,-50,116.45,-32,lwd=3,col="black",length=.1)
+text(100,-52,"I live are here",col="black")
+dev.off()
 
+```
+
+```{r}
 #plot Australia and ad some color
 OZ.lat=c(-44.5,-11) #lat and long ranges of interest
 OZ.long=c(113,155)
@@ -655,6 +694,13 @@ dev.off()
 
 ```
 
+<br>
+
+## Student task 4
+Try to recreate map 'Exercise 4'
+
+
+
 <br><br>
 
 # Mapping with ggplot and sf
@@ -735,7 +781,7 @@ ggplot(data = world) +
 
 
 #5th, add scale bar
-library("ggspatial")  #need for scale bar
+library("ggspatial")  #for scale bar
 ggplot(data = world) +
   geom_sf() +
   annotation_scale(location = "bl", width_hint = 0.5) +
@@ -976,3 +1022,7 @@ tmap_mode("view")
 nz
 
 ```
+<br>
+
+# Wrap up exercise.
+Try to recreate the map of Western Australia shown

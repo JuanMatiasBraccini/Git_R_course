@@ -152,6 +152,35 @@ Each .Rmd file has three types of components:
 **You can write your entire thesis this way (can even add your Reference list...)**
 <br><br>
 
+# Start a new R Markdown file in R Studio
+1. Open R Studio, then go to File → New file → R Markdown. (Choose a title and author, but leave the rest as it is, and press the OK button)
+2. Click button 'knit' (The R markdown file you opened, already contains example code)
+3. Embed some R code:
+```{r}
+# ```{r}
+#do a summary of data frame cars
+summary(cars)
+
+#plot something
+par(mfrow=c(2,1))
+plot(cars)
+image(volcano, col=terrain.colors(50))
+#```
+```
+The website http://rmarkdown.rstudio.com/authoring_pandoc_markdown.html provides more information on how to include lists, pictures, etc. Here only a few things are discussed.
+
+- header 1: # header 1
+- header 2: ## header 2
+- header 3: ### header 3
+- header 4: #### header 4
+
+bold text: **bold** text
+italics text: *italics* text
+code text: `code` text
+
+
+<br> 
+
 # Make code more efficient 
 
 ## Package purrr
@@ -166,7 +195,7 @@ employee <- c('John Doe','Peter Gynn','Jolie Hope')
 salary <- c(21000, 23400, 26800)
 startdate <- as.Date(c('2010-11-1','2008-3-25','2007-3-14'))
 
-# from dataframe and take mean of salary column
+# from dataframe  take mean of salary column
 employ_data <- data.frame(employee, salary, startdate)
 mean(employ_data$salary)
 

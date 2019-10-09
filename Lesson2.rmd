@@ -116,6 +116,7 @@ plot(ObsAge, ObsLen, frame.plot=F, cex=2, pch=16,
 
 ```
 <br>
+
 ## Introducing data frames
 + An excel spreadsheet often contains multiple columns and rows of data.
 + We can store our data this way in R (but better...)
@@ -180,6 +181,7 @@ plot(FishDat$ObsAge, FishDat$ObsLen, frame.plot=F, cex=2, pch=16,
 
 ```
 <br>
+
 ## Some more coding & how to calculate & plot frequency distributions
 ```{r }
 dummy=round(rnorm(1000,50,10)) #first create some dummy length data 
